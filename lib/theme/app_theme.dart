@@ -160,7 +160,7 @@ class AppTheme {
         thickness: 0.5,
         space: 0,
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: t.bg2,
         elevation: 0,
         margin: EdgeInsets.zero,
@@ -266,3 +266,7 @@ class AppTheme {
     );
   }
 }
+
+// ─── Theme mode preference ────────────────────────────────────────────────────
+ 
+enum AppThemeMode { light, dark, system }
