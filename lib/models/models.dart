@@ -99,3 +99,69 @@ class NearbyGame {
 
   bool matchesUser(UserProfile user) => level == user.level;
 }
+
+// ─── Group ────────────────────────────────────────────────────────────────────
+
+class Group {
+  final String id;
+  final String name;
+  final String emoji;
+  final int members;
+  final String adminName;
+  final bool isOpen;
+  final int unreadCount;
+  final String? nextGame;
+
+  const Group({
+    required this.id,
+    required this.name,
+    required this.emoji,
+    required this.members,
+    required this.adminName,
+    this.isOpen = false,
+    this.unreadCount = 0,
+    this.nextGame,
+  });
+}
+
+// ─── ChatMessage ──────────────────────────────────────────────────────────────
+
+class ChatMessage {
+  final String id;
+  final String senderName;
+  final bool isMe;
+  final String text;
+  final DateTime timestamp;
+  final bool isAnnouncement;
+
+  const ChatMessage({
+    required this.id,
+    required this.senderName,
+    required this.isMe,
+    required this.text,
+    required this.timestamp,
+    this.isAnnouncement = false,
+  });
+}
+
+// ─── MatchRecord ──────────────────────────────────────────────────────────────
+
+class MatchRecord {
+  final String id;
+  final String date;
+  final String opponent;
+  final bool isWin;
+  final String score;
+  final int points;
+  final int aces;
+
+  const MatchRecord({
+    required this.id,
+    required this.date,
+    required this.opponent,
+    required this.isWin,
+    required this.score,
+    required this.points,
+    required this.aces,
+  });
+}
