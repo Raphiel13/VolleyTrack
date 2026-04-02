@@ -64,3 +64,38 @@ class UserProfile {
         themeMode: themeMode ?? this.themeMode,
       );
 }
+
+// ─── NearbyGame ───────────────────────────────────────────────────────────────
+
+class NearbyGame {
+  final String id;
+  final String title;
+  final String location;
+  final DateTime dateTime;
+  final PlayerLevel level;
+  final GameCategory category;
+  final int spotsTotal;
+  final int spotsTaken;
+  final double distanceKm;
+  final String organizerName;
+  final double organizerRating;
+
+  const NearbyGame({
+    required this.id,
+    required this.title,
+    required this.location,
+    required this.dateTime,
+    required this.level,
+    required this.category,
+    required this.spotsTotal,
+    required this.spotsTaken,
+    required this.distanceKm,
+    this.organizerName = 'Marek K.',
+    this.organizerRating = 4.9,
+  });
+
+  int get spotsLeft => spotsTotal - spotsTaken;
+  bool get isFull => spotsLeft <= 0;
+
+  bool matchesUser(UserProfile user) => level == user.level;
+}
