@@ -266,7 +266,3 @@ class AppTheme {
     );
   }
 }
-
-// ─── Theme mode preference ────────────────────────────────────────────────────
- 
-enum AppThemeMode { light, dark, system }
