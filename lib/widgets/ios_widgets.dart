@@ -387,3 +387,199 @@ class IosSwitch extends StatelessWidget {
   }
 }
 
+// ─── KmSlider ─────────────────────────────────────────────────────────────────
+
+class KmSlider extends StatelessWidget {
+  final double value;
+  final ValueChanged<double> onChanged;
+
+  static const double _min = 0.5;
+  static const double _max = 50.0;
+  static const List<double> _snaps = [
+    0.5, 1.0, 2.0, 5.0, 10.0, 15.0, 20.0, 30.0, 50.0,
+  ];
+
+  const KmSlider({super.key, required this.value, required this.onChanged});
+
+  String _fmt(double v) {
+    if (v < 1) return '${(v * 1000).round()} m';
+    return v == v.roundToDouble()
+        ? '${v.round()} km'
+        : '${v.toStringAsFixed(1)} km';
+  }
+
+  double _toSlider(double km) =>
+      (_log(km / _min) / _log(_max / _min)).clamp(0.0, 1.0);
+
+  double _fromSlider(double t) {
+    final raw = _min * _pow(_max / _min, t);
+    for (final s in _snaps) {
+      if ((_toSlider(s) - t).abs() < 0.04) return s;
+    }
+    return (raw * 10).round() / 10.0;
+  }
+
+  double _log(num x) {
+    if (x <= 0) return 0;
+    double r = 0;
+    double n = x.toDouble();
+    while (n >= 2.71828) {
+      r++;
+      n /= 2.71828;
+    }
+    return r + (n - 1);
+  }
+
+  double _pow(double base, double exp) {
+    if (base <= 0) return 0;
+    double r = 1, term = 1;
+    final x = exp * _log(base);
+    for (int i = 1; i < 20; i++) {
+      term *= x / i;
+      r += term;
+    }
+    return r;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTokens.of(context);
+    final pct = _toSlider(value);
+    final count = value <= 2
+        ? 1
+        : value <= 5
+            ? 2
+            : value <= 15
+                ? 3
+                : value <= 30
+                    ? 4
+                    : 5;
+
+    return IosCard(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('📍', style: TextStyle(fontSize: 16)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Zasięg wyszukiwania',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: t.label,
+                      ),
+                    ),
+                    Text(
+                      'Przeciągnij aby zmienić obszar',
+                      style: GoogleFonts.inter(
+                          fontSize: 12, color: t.label2),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.blue,
+                  borderRadius: BorderRadius.circular(99),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.blue.withOpacity(0.35),
+                      blurRadius: 12,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  _fmt(value),
+                  style: GoogleFonts.inter(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              trackHeight: 4,
+              activeTrackColor: AppColors.blue,
+              inactiveTrackColor: t.label4,
+              thumbColor: Colors.white,
+              thumbShape: const RoundSliderThumbShape(
+                  enabledThumbRadius: 13),
+              overlayColor: AppColors.blue.withOpacity(0.15),
+              overlayShape: const RoundSliderOverlayShape(
+                  overlayRadius: 22),
+              showValueIndicator: ShowValueIndicator.never,
+            ),
+            child: Slider(
+              value: pct,
+              onChanged: (v) => onChanged(_fromSlider(v)),
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: _snaps.asMap().entries.map((e) {
+              final isActive = e.value == value;
+              final lbl = e.key == 0
+                  ? '500m'
+                  : e.key == _snaps.length - 1
+                      ? '50km'
+                      : '${e.value.round()}';
+              return GestureDetector(
+                onTap: () => onChanged(e.value),
+                child: Text(
+                  lbl,
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: isActive ? AppColors.blue : t.label3,
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.green.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                  color: AppColors.green.withOpacity(0.15)),
+            ),
+            child: Row(
+              children: [
+                Text(
+                  '$count gier ',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.green,
+                  ),
+                ),
+                Text(
+                  'w promieniu ${_fmt(value)}',
+                  style: GoogleFonts.inter(
+                      fontSize: 11, color: t.label2),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
