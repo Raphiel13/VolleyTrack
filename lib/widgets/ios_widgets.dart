@@ -230,3 +230,44 @@ class UserAvatar extends StatelessWidget {
     );
   }
 }
+
+// ─── ChipBadge ────────────────────────────────────────────────────────────────
+
+enum ChipVariant { blue, green, orange, red, gray }
+
+class ChipBadge extends StatelessWidget {
+  final String label;
+  final ChipVariant variant;
+
+  const ChipBadge(this.label, {super.key, this.variant = ChipVariant.gray});
+
+  @override
+  Widget build(BuildContext context) {
+    final (bg, fg) = switch (variant) {
+      ChipVariant.blue   => (AppColors.blue.withOpacity(0.12),   AppColors.blue),
+      ChipVariant.green  => (AppColors.green.withOpacity(0.12),  AppColors.green),
+      ChipVariant.orange => (AppColors.orange.withOpacity(0.12), AppColors.orange),
+      ChipVariant.red    => (AppColors.red.withOpacity(0.12),    AppColors.red),
+      ChipVariant.gray   => (
+          const Color(0x1E767680),
+          const Color(0xFF8E8E93),
+        ),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(99),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.inter(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: fg,
+        ),
+      ),
+    );
+  }
+}
