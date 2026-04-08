@@ -368,3 +368,22 @@ class IosSegmentedControl<T> extends StatelessWidget {
     );
   }
 }
+
+// ─── IosSwitch ────────────────────────────────────────────────────────────────
+
+class IosSwitch extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const IosSwitch({super.key, required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return CupertinoSwitch(
+      value: value,
+      onChanged: onChanged,
+      activeColor: AppColors.green,
+    );
+  }
+}
+
