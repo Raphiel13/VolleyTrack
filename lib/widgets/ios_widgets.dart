@@ -583,3 +583,149 @@ class KmSlider extends StatelessWidget {
     );
   }
 }
+
+// ─── GameCard ─────────────────────────────────────────────────────────────────
+
+class GameCard extends StatelessWidget {
+  final NearbyGame game;
+  final bool isMatch;
+  final VoidCallback? onTap;
+
+  const GameCard({
+    super.key,
+    required this.game,
+    this.isMatch = false,
+    this.onTap,
+  });
+
+  String _dayLabel(DateTime dt) {
+    final now = DateTime.now();
+    if (dt.day == now.day && dt.month == now.month) return 'Dziś';
+    if (dt.day == now.day + 1 && dt.month == now.month) return 'Jutro';
+    const days = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb', 'Nd'];
+    return days[dt.weekday - 1];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTokens.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: t.bg2,
+        borderRadius: BorderRadius.circular(16),
+        border: isMatch
+            ? Border.all(color: AppColors.blue.withOpacity(0.3))
+            : null,
+        boxShadow: isMatch
+            ? [
+                BoxShadow(
+                  color: AppColors.blue.withOpacity(0.12),
+                  blurRadius: 16,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.hardEdge,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SfIconBox(
+                  emoji: game.category == GameCategory.beach
+                      ? '🏖️'
+                      : '🏛️',
+                  bgColor: game.category == GameCategory.beach
+                      ? AppColors.orange.withOpacity(0.12)
+                      : AppColors.blue.withOpacity(0.12),
+                  size: 36,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (isMatch) ...[
+                        ChipBadge(
+                          '✦ Pasuje do profilu',
+                          variant: ChipVariant.blue,
+                        ),
+                        const SizedBox(height: 5),
+                      ],
+                      Text(
+                        game.title,
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: t.label,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '📍 ${game.location}',
+                        style: GoogleFonts.inter(
+                            fontSize: 13, color: t.label2),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          ChipBadge(game.level.label),
+                          ChipBadge(
+                            '${game.spotsLeft} '
+                            '${game.spotsLeft == 1 ? "miejsce" : "miejsca"}',
+                            variant: game.spotsLeft <= 2
+                                ? ChipVariant.red
+                                : ChipVariant.green,
+                          ),
+                          ChipBadge('${game.distanceKm} km'),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${game.dateTime.hour.toString().padLeft(2, '0')}:'
+                      '${game.dateTime.minute.toString().padLeft(2, '0')}',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.blue,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _dayLabel(game.dateTime),
+                      style: GoogleFonts.inter(
+                          fontSize: 12, color: t.label3),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 4),
+                Icon(CupertinoIcons.chevron_right,
+                    size: 14, color: t.label4),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
