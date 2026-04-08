@@ -302,3 +302,69 @@ class LevelDots extends StatelessWidget {
     );
   }
 }
+
+// ─── IosSegmentedControl ──────────────────────────────────────────────────────
+
+class IosSegmentedControl<T> extends StatelessWidget {
+  final List<(T, String)> options;
+  final T selected;
+  final ValueChanged<T> onChanged;
+
+  const IosSegmentedControl({
+    super.key,
+    required this.options,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTokens.of(context);
+    return Container(
+      height: 36,
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: const Color(0x1E767680),
+        borderRadius: BorderRadius.circular(9),
+      ),
+      child: Row(
+        children: options.map((opt) {
+          final isActive = opt.$1 == selected;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => onChanged(opt.$1),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                decoration: BoxDecoration(
+                  color: isActive ? t.bg2 : Colors.transparent,
+                  borderRadius: BorderRadius.circular(7),
+                  boxShadow: isActive
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.12),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Center(
+                  child: Text(
+                    opt.$2,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: isActive
+                          ? FontWeight.w600
+                          : FontWeight.w500,
+                      color: isActive ? t.label : t.label2,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
