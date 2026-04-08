@@ -271,3 +271,34 @@ class ChipBadge extends StatelessWidget {
     );
   }
 }
+
+// ─── LevelDots ────────────────────────────────────────────────────────────────
+
+class LevelDots extends StatelessWidget {
+  final PlayerLevel level;
+  final int max;
+
+  const LevelDots({super.key, required this.level, this.max = 5});
+
+  @override
+  Widget build(BuildContext context) {
+    final idx = PlayerLevel.values.indexOf(level);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(
+        max,
+        (i) => Container(
+          width: 6,
+          height: 6,
+          margin: const EdgeInsets.only(right: 3),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: i <= idx
+                ? AppColors.levelColors[idx]
+                : AppTokens.of(context).label4,
+          ),
+        ),
+      ),
+    );
+  }
+}
