@@ -159,7 +159,7 @@ class HomeScreen extends StatelessWidget {
             SectionLabel(
               'Twoje grupy',
               action: 'Wszystkie',
-              onAction: () {},
+              onAction: onGoGames,
             ),
             SizedBox(
               height: 148,
