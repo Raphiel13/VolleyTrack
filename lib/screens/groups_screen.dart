@@ -172,49 +172,89 @@ class _NotificationBanner extends StatefulWidget {
   State<_NotificationBanner> createState() => _NotificationBannerState();
 }
 
-class _NotificationBannerState extends State<_NotificationBanner> {
-  // null = no choice, true = attending, false = not attending
+class _NotificationBannerState extends State<_NotificationBanner>
+    with SingleTickerProviderStateMixin {
   bool? _attending;
+  late final AnimationController _ctrl;
+  late final Animation<Offset> _slide;
+  late final Animation<double> _fade;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 380),
+    );
+    _slide = Tween<Offset>(begin: Offset.zero, end: const Offset(1.3, 0))
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInCubic));
+    _fade = Tween<double>(begin: 1.0, end: 0.0)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeIn));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _onTap(bool value) async {
+    if (_attending != null) return; // już wybrano
+    setState(() => _attending = value);
+    await Future.delayed(const Duration(milliseconds: 550));
+    if (!mounted) return;
+    await _ctrl.forward();
+    if (!mounted) return;
+    widget.onConfirm(value);
+  }
 
   @override
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.green.withOpacity(0.10),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.green.withOpacity(0.2)),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('🔔', style: TextStyle(fontSize: 20)),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Ekipa Piątkowa',
-                      style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: t.label)),
-                  const SizedBox(height: 3),
-                  Text('Admin otworzył zapisy na sobotę 10:00!',
-                      style: GoogleFonts.inter(fontSize: 13, color: t.label2)),
-                  const SizedBox(height: 10),
-                  Row(children: [
-                    _confirmBtn(context, '✓ Będę', value: true),
-                    const SizedBox(width: 8),
-                    _confirmBtn(context, '✗ Nie mogę', value: false),
-                  ]),
-                ],
-              ),
+    return FadeTransition(
+      opacity: _fade,
+      child: SlideTransition(
+        position: _slide,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.green.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(16),
+              border:
+                  Border.all(color: AppColors.green.withValues(alpha: 0.2)),
             ),
-          ],
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('🔔', style: TextStyle(fontSize: 20)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Ekipa Piątkowa',
+                          style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: t.label)),
+                      const SizedBox(height: 3),
+                      Text('Admin otworzył zapisy na sobotę 10:00!',
+                          style: GoogleFonts.inter(
+                              fontSize: 13, color: t.label2)),
+                      const SizedBox(height: 10),
+                      Row(children: [
+                        _confirmBtn(context, '✓ Będę', value: true),
+                        const SizedBox(width: 8),
+                        _confirmBtn(context, '✗ Nie mogę', value: false),
+                      ]),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -225,11 +265,9 @@ class _NotificationBannerState extends State<_NotificationBanner> {
     final isSelected = _attending == value;
     final activeColor = value ? AppColors.green : AppColors.red;
     return GestureDetector(
-      onTap: () {
-        setState(() => _attending = value);
-        widget.onConfirm(value);
-      },
-      child: Container(
+      onTap: () => _onTap(value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: isSelected ? activeColor.withValues(alpha: 0.15) : t.bg2,
