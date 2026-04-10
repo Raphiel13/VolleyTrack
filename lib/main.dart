@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -74,6 +75,34 @@ class _MainShellState extends State<MainShell> {
   int _tab = 0;
   final _navKeys = List.generate(5, (_) => GlobalKey<NavigatorState>());
 
+  static const _navItems = [
+    BottomNavigationBarItem(
+      icon: Icon(CupertinoIcons.house),
+      activeIcon: Icon(CupertinoIcons.house_fill),
+      label: 'Start',
+    ),
+    BottomNavigationBarItem(
+      icon: Icon(CupertinoIcons.search),
+      activeIcon: Icon(CupertinoIcons.search),
+      label: 'Gry',
+    ),
+    BottomNavigationBarItem(
+      icon: Icon(CupertinoIcons.chart_bar),
+      activeIcon: Icon(CupertinoIcons.chart_bar_fill),
+      label: 'Statystyki',
+    ),
+    BottomNavigationBarItem(
+      icon: Icon(CupertinoIcons.person_2),
+      activeIcon: Icon(CupertinoIcons.person_2_fill),
+      label: 'Grupy',
+    ),
+    BottomNavigationBarItem(
+      icon: Icon(CupertinoIcons.person_circle),
+      activeIcon: Icon(CupertinoIcons.person_circle_fill),
+      label: 'Profil',
+    ),
+  ];
+
   void _switchTab(int i) {
     if (_tab == i) {
       _navKeys[i].currentState?.popUntil((r) => r.isFirst);
@@ -84,6 +113,8 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppTokens.of(context);
+
     final screens = [
       _TabNav(
         navKey: _navKeys[0],
@@ -147,36 +178,27 @@ class _MainShellState extends State<MainShell> {
 
     return Scaffold(
       body: IndexedStack(index: _tab, children: screens),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _tab,
-        onTap: _switchTab,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Start',
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(color: t.separator, width: 0.5),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search_outlined),
-            activeIcon: Icon(Icons.search),
-            label: 'Gry',
+        ),
+        child: ClipRect(
+          child: BackdropFilter(
+            filter: ColorFilter.mode(
+              Colors.transparent,
+              BlendMode.multiply,
+            ),
+            child: BottomNavigationBar(
+              currentIndex: _tab,
+              onTap: _switchTab,
+              items: _navItems,
+              backgroundColor: t.glassBg,
+              elevation: 0,
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart_outlined),
-            activeIcon: Icon(Icons.bar_chart),
-            label: 'Statystyki',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.group_outlined),
-            activeIcon: Icon(Icons.group),
-            label: 'Grupy',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profil',
-          ),
-        ],
+        ),
       ),
     );
   }
