@@ -4,729 +4,603 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
 import '../widgets/ios_widgets.dart';
-import 'game_detail_sheet.dart';
 
-enum _ViewMode { list, map }
-
-class GamesScreen extends StatefulWidget {
+class ProfileScreen extends StatefulWidget {
   final UserProfile user;
-  const GamesScreen({super.key, required this.user});
+  final ValueChanged<UserProfile> onSave;
+
+  const ProfileScreen({
+    super.key,
+    required this.user,
+    required this.onSave,
+  });
 
   @override
-  State<GamesScreen> createState() => _GamesScreenState();
+  State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _GamesScreenState extends State<GamesScreen> {
-  _ViewMode _view = _ViewMode.list;
-  String _search = '';
-  PlayerLevel? _filterLevel;
-  GameCategory? _filterCat;
-  double _radius = 10.0;
+class _ProfileScreenState extends State<ProfileScreen> {
+  late TextEditingController _name;
+  late TextEditingController _bio;
+  late PlayerLevel _level;
+  late List<PlayerPosition> _positions;
+  late AppThemeMode _themeMode;
+  bool _saved = false;
 
-  List<NearbyGame> get _filtered => MockData.games.where((g) {
-        final ms = _search.isEmpty ||
-            g.title.toLowerCase().contains(_search.toLowerCase()) ||
-            g.location.toLowerCase().contains(_search.toLowerCase());
-        final ml = _filterLevel == null || g.level == _filterLevel;
-        final mc = _filterCat == null || g.category == _filterCat;
-        final mr = g.distanceKm <= _radius;
-        return ms && ml && mc && mr;
-      }).toList();
+  bool _notifGames = true;
+  bool _notifGroups = true;
+  bool _notifResults = false;
 
-  void _openGame(NearbyGame g) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => GameDetailSheet(game: g),
+  @override
+  void initState() {
+    super.initState();
+    _name = TextEditingController(text: widget.user.name);
+    _bio = TextEditingController(text: widget.user.bio);
+    _level = widget.user.level;
+    _positions = List.from(widget.user.positions);
+    _themeMode = widget.user.themeMode;
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _bio.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    widget.onSave(widget.user.copyWith(
+      name: _name.text.trim(),
+      bio: _bio.text.trim(),
+      level: _level,
+      positions: _positions,
+      themeMode: _themeMode,
+    ));
+    setState(() => _saved = true);
+    Future.delayed(
+      const Duration(seconds: 2),
+      () => setState(() => _saved = false),
     );
+  }
+
+  void _togglePos(PlayerPosition p) {
+    setState(() {
+      if (_positions.contains(p)) {
+        _positions.remove(p);
+      } else {
+        _positions.add(p);
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
+    final levelIdx = PlayerLevel.values.indexOf(_level);
 
     return CustomScrollView(
       slivers: [
+        // ── Profile hero ───────────────────────────────────────────
         SliverSafeArea(
           bottom: false,
           sliver: SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-              child: Text(
-                'Znajdź grę',
-                style: GoogleFonts.inter(
-                  fontSize: 34,
-                  fontWeight: FontWeight.w700,
-                  color: t.label,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ),
-          ),
-        ),
-        SliverPersistentHeader(
-          pinned: true,
-          delegate: _FilterHeader(
-            search: _search,
-            onSearch: (v) => setState(() => _search = v),
-            view: _view,
-            onView: (v) => setState(() => _view = v),
-            filterLevel: _filterLevel,
-            onLevel: (l) => setState(() => _filterLevel = l),
-            filterCat: _filterCat,
-            onCat: (c) => setState(() => _filterCat = c),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: KmSlider(
-              value: _radius,
-              onChanged: (v) => setState(() => _radius = v),
-            ),
-          ),
-        ),
-        if (_view == _ViewMode.list)
-          SliverToBoxAdapter(
-            child: _ListView(
-              games: _filtered,
-              user: widget.user,
-              radius: _radius,
-              onOpen: _openGame,
-            ),
-          )
-        else
-          SliverToBoxAdapter(
-            child: _MapPlaceholder(radius: _radius),
-          ),
-        const SliverToBoxAdapter(child: SizedBox(height: 32)),
-      ],
-    );
-  }
-}
-
-// ── Filter Header ─────────────────────────────────────────────────────────────
-
-class _FilterHeader extends SliverPersistentHeaderDelegate {
-  final String search;
-  final ValueChanged<String> onSearch;
-  final _ViewMode view;
-  final ValueChanged<_ViewMode> onView;
-  final PlayerLevel? filterLevel;
-  final ValueChanged<PlayerLevel?> onLevel;
-  final GameCategory? filterCat;
-  final ValueChanged<GameCategory?> onCat;
-
-  _FilterHeader({
-    required this.search,
-    required this.onSearch,
-    required this.view,
-    required this.onView,
-    required this.filterLevel,
-    required this.onLevel,
-    required this.filterCat,
-    required this.onCat,
-  });
-
-  @override
-  double get minExtent => maxExtent;
-  @override
-  double get maxExtent => 110;
-
-  @override
-  Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
-    final t = AppTokens.of(context);
-    return Container(
-      color: t.bg,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-      child: Column(
-        children: [
-          Container(
-            height: 42,
-            decoration: BoxDecoration(
-              color: t.bg == AppTokens.dark.bg
-                  ? const Color(0xFF2C2C2E)
-                  : const Color(0x1E767680),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                const SizedBox(width: 12),
-                Icon(CupertinoIcons.search, size: 17, color: t.label3),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    onChanged: onSearch,
-                    decoration: InputDecoration(
-                      hintText: 'Szukaj gier, lokalizacji…',
-                      border: InputBorder.none,
-                      hintStyle: GoogleFonts.inter(
-                          fontSize: 17, color: t.label3),
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
-                      filled: false,
-                    ),
-                    style: GoogleFonts.inter(
-                        fontSize: 17, color: t.label),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              SizedBox(
-                width: 140,
-                child: IosSegmentedControl<_ViewMode>(
-                  options: const [
-                    (_ViewMode.list, '☰ Lista'),
-                    (_ViewMode.map, '🗺 Mapa'),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    AppColors.blue.withOpacity(0.14),
+                    t.bg.withOpacity(0),
                   ],
-                  selected: view,
-                  onChanged: onView,
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _chip(context, 'Wszystkie', filterLevel == null,
-                          () => onLevel(null)),
-                      ...PlayerLevel.values.map((l) => _chip(
-                          context, l.label, filterLevel == l,
-                          () => onLevel(l))),
-                      Container(
-                        width: 1, height: 20,
-                        margin:
-                            const EdgeInsets.symmetric(horizontal: 6),
-                        color: t.separator,
-                      ),
-                      _chip(context, '🏛️ Hala',
-                          filterCat == GameCategory.indoor,
-                          () => onCat(filterCat == GameCategory.indoor
-                              ? null
-                              : GameCategory.indoor)),
-                      _chip(context, '🏖️ Plaża',
-                          filterCat == GameCategory.beach,
-                          () => onCat(filterCat == GameCategory.beach
-                              ? null
-                              : GameCategory.beach)),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _chip(
-      BuildContext ctx, String lbl, bool active, VoidCallback onTap) {
-    final t = AppTokens.of(ctx);
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        margin: const EdgeInsets.only(right: 7),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: active ? AppColors.blue : const Color(0x1E767680),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          lbl,
-          style: GoogleFonts.inter(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: active ? Colors.white : t.label,
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  bool shouldRebuild(_FilterHeader old) => true;
-}
-
-// ── List View ─────────────────────────────────────────────────────────────────
-
-class _ListView extends StatelessWidget {
-  final List<NearbyGame> games;
-  final UserProfile user;
-  final double radius;
-  final void Function(NearbyGame) onOpen;
-
-  const _ListView({
-    required this.games,
-    required this.user,
-    required this.radius,
-    required this.onOpen,
-  });
-
-  String _fmtKm(double v) => v < 1
-      ? '${(v * 1000).round()} m'
-      : v == v.roundToDouble()
-          ? '${v.round()} km'
-          : '${v.toStringAsFixed(1)} km';
-
-  @override
-  Widget build(BuildContext context) {
-    final t = AppTokens.of(context);
-
-    if (games.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 60),
-        child: Column(
-          children: [
-            const Text('🔍', style: TextStyle(fontSize: 48)),
-            const SizedBox(height: 12),
-            Text(
-              'Brak gier w promieniu ${_fmtKm(radius)}',
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: t.label,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Zwiększ zasięg powyżej',
-              style: GoogleFonts.inter(
-                  fontSize: 14, color: t.label3),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final matchGames =
-        games.where((g) => g.matchesUser(user)).toList();
-    final otherGames =
-        games.where((g) => !g.matchesUser(user)).toList();
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (matchGames.isNotEmpty) ...[
-            _divider(context, '✦ Dopasowane do Twojego profilu'),
-            ...matchGames.map((g) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: GameCard(
-                      game: g, isMatch: true, onTap: () => onOpen(g)),
-                )),
-          ],
-          if (otherGames.isNotEmpty) ...[
-            if (matchGames.isNotEmpty) const SizedBox(height: 4),
-            _divider(context, 'Pozostałe gry'),
-            ...otherGames.map((g) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child:
-                      GameCard(game: g, onTap: () => onOpen(g)),
-                )),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _divider(BuildContext context, String label) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        children: [
-          Expanded(
-              child:
-                  Divider(color: AppTokens.of(context).separator)),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: AppColors.blue,
-              ),
-            ),
-          ),
-          Expanded(
-              child:
-                  Divider(color: AppTokens.of(context).separator)),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Map View ──────────────────────────────────────────────────────────────────
-
-class _MapView extends StatefulWidget {
-  final List<NearbyGame> allGames;
-  final List<NearbyGame> filteredGames;
-  final UserProfile user;
-  final double radius;
-  final void Function(NearbyGame) onOpen;
-
-  const _MapView({
-    required this.allGames,
-    required this.filteredGames,
-    required this.user,
-    required this.radius,
-    required this.onOpen,
-  });
-
-  @override
-  State<_MapView> createState() => _MapViewState();
-}
-
-class _MapViewState extends State<_MapView> {
-  NearbyGame? _pinSelected;
-
-  static const _positions = {
-    '1': (0.52, 0.48), '2': (0.62, 0.36), '3': (0.36, 0.58),
-    '4': (0.68, 0.66), '5': (0.28, 0.30),
-  };
-
-  String _fmtKm(double v) => v < 1
-      ? '${(v * 1000).round()} m'
-      : v == v.roundToDouble()
-          ? '${v.round()} km'
-          : '${v.toStringAsFixed(1)} km';
-
-  @override
-  Widget build(BuildContext context) {
-    final rFrac = (widget.radius / 50.0).clamp(0.0, 1.0);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(22),
-            child: SizedBox(
-              height: 240,
-              child: LayoutBuilder(builder: (ctx, constraints) {
-                final w = constraints.maxWidth;
-                final h = constraints.maxHeight;
-                final rPx =
-                    (rFrac * 100 + 20).clamp(20.0, 120.0);
-
-                return Stack(children: [
-                  Container(color: const Color(0xFFE8F0E9)),
-                  CustomPaint(
-                      painter: _GridPainter(), size: Size(w, h)),
-                  CustomPaint(
-                      painter: _RoadsPainter(), size: Size(w, h)),
-                  // Radius ring
-                  Positioned(
-                    left: w * 0.52 - rPx,
-                    top: h * 0.52 - rPx,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 350),
-                      curve: Curves.elasticOut,
-                      width: rPx * 2,
-                      height: rPx * 2,
-                      decoration: BoxDecoration(
+              padding: const EdgeInsets.only(top: 20, bottom: 16),
+              child: Column(children: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 88,
+                      height: 88,
+                      decoration: const BoxDecoration(
                         shape: BoxShape.circle,
-                        color: AppColors.blue.withOpacity(0.07),
-                        border: Border.all(
-                          color: AppColors.blue.withOpacity(0.35),
-                          width: 1.5,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [AppColors.blue, AppColors.teal],
                         ),
-                      ),
-                    ),
-                  ),
-                  // User dot
-                  Positioned(
-                    left: w * 0.52 - 9,
-                    top: h * 0.52 - 9,
-                    child: Container(
-                      width: 18, height: 18,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.blue,
-                        border: Border.all(
-                            color: Colors.white, width: 3),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.blue.withOpacity(0.4),
-                            blurRadius: 8,
-                            spreadRadius: 2,
+                            color: Color(0x59007AFF),
+                            blurRadius: 20,
+                            offset: Offset(0, 4),
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                  // Pins
-                  ...widget.allGames.map((g) {
-                    final pos = _positions[g.id];
-                    if (pos == null) return const SizedBox();
-                    final inRadius =
-                        widget.filteredGames.contains(g);
-                    final isMatch = g.matchesUser(widget.user);
-                    return Positioned(
-                      left: w * pos.$1 - 40,
-                      top: h * pos.$2 - 36,
-                      child: Opacity(
-                        opacity: inRadius ? 1.0 : 0.25,
-                        child: GestureDetector(
-                          onTap: inRadius
-                              ? () => setState(() =>
-                                  _pinSelected =
-                                      _pinSelected?.id == g.id
-                                          ? null
-                                          : g)
-                              : null,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: isMatch && inRadius
-                                      ? AppColors.blue
-                                      : Colors.white,
-                                  borderRadius:
-                                      BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black
-                                          .withOpacity(0.15),
-                                      blurRadius: 8,
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      g.category ==
-                                              GameCategory.beach
-                                          ? '🏖️'
-                                          : '🏛️',
-                                      style: const TextStyle(
-                                          fontSize: 13),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      g.title,
-                                      style: GoogleFonts.inter(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        color: isMatch && inRadius
-                                            ? Colors.white
-                                            : const Color(
-                                                0xFF1C1C1E),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                width: 8, height: 8,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: isMatch && inRadius
-                                      ? AppColors.blue
-                                      : Colors.white,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black
-                                          .withOpacity(0.12),
-                                      blurRadius: 4,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                      child: Center(
+                        child: Text(
+                          _name.text
+                              .split(' ')
+                              .map((n) => n.isNotEmpty ? n[0] : '')
+                              .take(2)
+                              .join()
+                              .toUpperCase(),
+                          style: GoogleFonts.inter(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
                           ),
                         ),
                       ),
-                    );
-                  }),
-                  // Radius label
-                  Positioned(
-                    bottom: 12, left: 0, right: 0,
-                    child: Center(
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: -4,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 4),
+                        width: 28,
+                        height: 28,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(8),
+                          color: t.bg2,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: t.separator),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.08),
-                              blurRadius: 8,
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 6,
                             ),
                           ],
                         ),
-                        child: Text(
-                          '⬤ ${_fmtKm(widget.radius)}',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.blue,
-                          ),
+                        child: const Center(
+                          child: Text('✏️',
+                              style: TextStyle(fontSize: 13)),
                         ),
                       ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _name.text.isEmpty ? 'Twój profil' : _name.text,
+                  style: GoogleFonts.inter(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: t.label,
+                    letterSpacing: -0.3,
                   ),
-                  // Zoom buttons
-                  const Positioned(
-                    top: 12, right: 12,
-                    child: Column(children: [
-                      _ZoomBtn('+'),
-                      SizedBox(height: 1),
-                      _ZoomBtn('−'),
-                    ]),
-                  ),
-                ]);
-              }),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _level.label,
+                  style: GoogleFonts.inter(
+                      fontSize: 15, color: t.label2),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ['24', 'Mecze'],
+                    ['16', 'W'],
+                    ['67%', 'Win%'],
+                  ].asMap().entries.map((e) {
+                    return Row(children: [
+                      if (e.key > 0)
+                        Container(
+                          width: 1,
+                          height: 24,
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: 20),
+                          color: t.separator,
+                        ),
+                      Column(children: [
+                        Text(
+                          e.value[0],
+                          style: GoogleFonts.inter(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: t.label,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        Text(
+                          e.value[1],
+                          style: GoogleFonts.inter(
+                              fontSize: 13, color: t.label2),
+                        ),
+                      ]),
+                    ]);
+                  }).toList(),
+                ),
+              ]),
             ),
           ),
         ),
-        if (_pinSelected != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-            child: GameCard(
-              game: _pinSelected!,
-              isMatch: _pinSelected!.matchesUser(widget.user),
-              onTap: () => widget.onOpen(_pinSelected!),
+
+        SliverList(
+          delegate: SliverChildListDelegate([
+
+            // ── Personal data ────────────────────────────────────
+            SectionLabel('Dane osobowe'),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: IosCard(
+                child: Column(children: [
+                  Padding(
+                    padding:
+                        const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Imię i nazwisko',
+                            style: GoogleFonts.inter(
+                                fontSize: 12, color: t.label2)),
+                        const SizedBox(height: 5),
+                        TextField(
+                          controller: _name,
+                          onChanged: (_) => setState(() {}),
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                            filled: false,
+                          ),
+                          style: GoogleFonts.inter(
+                              fontSize: 16, color: t.label),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IosSeparator(indent: 16),
+                  Padding(
+                    padding:
+                        const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Bio',
+                            style: GoogleFonts.inter(
+                                fontSize: 12, color: t.label2)),
+                        const SizedBox(height: 5),
+                        TextField(
+                          controller: _bio,
+                          maxLines: 2,
+                          decoration: InputDecoration(
+                            hintText: 'Napisz coś o sobie…',
+                            border: InputBorder.none,
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                            filled: false,
+                            hintStyle: GoogleFonts.inter(
+                                color: t.label3, fontSize: 15),
+                          ),
+                          style: GoogleFonts.inter(
+                              fontSize: 15, color: t.label),
+                        ),
+                      ],
+                    ),
+                  ),
+                ]),
+              ),
             ),
-          ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-          child: Text(
-            '${widget.filteredGames.length} gier w ${_fmtKm(widget.radius)}',
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: AppTokens.of(context).label2,
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-          child: Column(
-            children: widget.filteredGames
-                .map((g) => Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: GameCard(
-                        game: g,
-                        isMatch: g.matchesUser(widget.user),
-                        onTap: () => widget.onOpen(g),
+
+            // ── Level slider ─────────────────────────────────────
+            SectionLabel('Poziom gry'),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: IosCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment:
+                          MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _level.label,
+                          style: GoogleFonts.inter(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.levelColors[levelIdx],
+                          ),
+                        ),
+                        Row(
+                          children: List.generate(5, (i) {
+                            return GestureDetector(
+                              onTap: () => setState(() =>
+                                  _level = PlayerLevel.values[i]),
+                              child: Container(
+                                width: 28,
+                                height: 5,
+                                margin:
+                                    const EdgeInsets.only(left: 4),
+                                decoration: BoxDecoration(
+                                  borderRadius:
+                                      BorderRadius.circular(99),
+                                  color: i <= levelIdx
+                                      ? AppColors
+                                          .levelColors[levelIdx]
+                                      : t.label4,
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 4,
+                        activeTrackColor:
+                            AppColors.levelColors[levelIdx],
+                        inactiveTrackColor: t.label4,
+                        thumbColor: Colors.white,
+                        overlayColor: AppColors
+                            .levelColors[levelIdx]
+                            .withOpacity(0.15),
+                        thumbShape: const RoundSliderThumbShape(
+                            enabledThumbRadius: 12),
+                        showValueIndicator:
+                            ShowValueIndicator.never,
                       ),
-                    ))
-                .toList(),
-          ),
+                      child: Slider(
+                        value: levelIdx.toDouble(),
+                        min: 0,
+                        max: PlayerLevel.values.length - 1,
+                        divisions: PlayerLevel.values.length - 1,
+                        onChanged: (v) => setState(() =>
+                            _level =
+                                PlayerLevel.values[v.round()]),
+                      ),
+                    ),
+                    Row(
+                      mainAxisAlignment:
+                          MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Początkujący',
+                            style: GoogleFonts.inter(
+                                fontSize: 11, color: t.label3)),
+                        Text('Wyczynowy',
+                            style: GoogleFonts.inter(
+                                fontSize: 11, color: t.label3)),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.blue.withOpacity(0.07),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '💡 Wpływa na dopasowanie gier w wyszukiwarce',
+                        style: GoogleFonts.inter(
+                            fontSize: 12, color: AppColors.blue),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // ── Positions ────────────────────────────────────────
+            SectionLabel('Preferowane pozycje'),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: IosCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: PlayerPosition.values.map((p) {
+                        final sel = _positions.contains(p);
+                        return GestureDetector(
+                          onTap: () => _togglePos(p),
+                          child: AnimatedContainer(
+                            duration:
+                                const Duration(milliseconds: 150),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 9),
+                            decoration: BoxDecoration(
+                              color:
+                                  sel ? AppColors.blue : t.bg2,
+                              borderRadius:
+                                  BorderRadius.circular(99),
+                              border: Border.all(
+                                color: sel
+                                    ? AppColors.blue
+                                    : t.separator,
+                              ),
+                            ),
+                            child: Text(
+                              p.label,
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: sel
+                                    ? Colors.white
+                                    : t.label,
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Wybrano: ${_positions.isEmpty ? "brak" : _positions.map((p) => p.label).join(", ")}',
+                      style: GoogleFonts.inter(
+                          fontSize: 13, color: t.label3),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // ── Theme picker ─────────────────────────────────────
+            SectionLabel('Wygląd'),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: IosCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(children: [
+                  Row(
+                    mainAxisAlignment:
+                        MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Tryb kolorów',
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: t.label,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  IosSegmentedControl<AppThemeMode>(
+                    options: const [
+                      (AppThemeMode.light, '☀️ Jasny'),
+                      (AppThemeMode.system, 'Systemowy'),
+                      (AppThemeMode.dark, '🌙 Ciemny'),
+                    ],
+                    selected: _themeMode,
+                    onChanged: (v) =>
+                        setState(() => _themeMode = v),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    switch (_themeMode) {
+                      AppThemeMode.system =>
+                          'Podąża za ustawieniami systemu',
+                      AppThemeMode.dark =>
+                          'Wymuszony tryb ciemny',
+                      AppThemeMode.light =>
+                          'Wymuszony tryb jasny',
+                    },
+                    style: GoogleFonts.inter(
+                        fontSize: 12, color: t.label3),
+                    textAlign: TextAlign.center,
+                  ),
+                ]),
+              ),
+            ),
+
+            // ── Notifications ────────────────────────────────────
+            SectionLabel('Powiadomienia'),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: IosCard(
+                child: Column(children: [
+                  IosRow(
+                    leading: SfIconBox(
+                        emoji: '📍',
+                        bgColor:
+                            AppColors.blue.withOpacity(0.12)),
+                    title: Text('Nowe gry w okolicy',
+                        style: GoogleFonts.inter(
+                            fontSize: 16, color: t.label)),
+                    showChevron: false,
+                    trailing: IosSwitch(
+                      value: _notifGames,
+                      onChanged: (v) =>
+                          setState(() => _notifGames = v),
+                    ),
+                  ),
+                  IosSeparator(),
+                  IosRow(
+                    leading: SfIconBox(
+                        emoji: '👥',
+                        bgColor:
+                            AppColors.teal.withOpacity(0.12)),
+                    title: Text('Zapisy grupowe',
+                        style: GoogleFonts.inter(
+                            fontSize: 16, color: t.label)),
+                    showChevron: false,
+                    trailing: IosSwitch(
+                      value: _notifGroups,
+                      onChanged: (v) =>
+                          setState(() => _notifGroups = v),
+                    ),
+                  ),
+                  IosSeparator(),
+                  IosRow(
+                    leading: SfIconBox(
+                        emoji: '📊',
+                        bgColor:
+                            AppColors.orange.withOpacity(0.12)),
+                    title: Text('Wyniki meczów',
+                        style: GoogleFonts.inter(
+                            fontSize: 16, color: t.label)),
+                    showChevron: false,
+                    trailing: IosSwitch(
+                      value: _notifResults,
+                      onChanged: (v) =>
+                          setState(() => _notifResults = v),
+                    ),
+                  ),
+                ]),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // ── Save button ──────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: ElevatedButton(
+                    key: ValueKey(_saved),
+                    onPressed: _save,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          _saved ? AppColors.green : AppColors.blue,
+                    ),
+                    child: Text(
+                        _saved ? '✓ Zapisano!' : 'Zapisz profil'),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // ── Sign out ─────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () {},
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.red,
+                    side: BorderSide(
+                        color: AppColors.red.withOpacity(0.3)),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: Text(
+                    'Wyloguj się',
+                    style: GoogleFonts.inter(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 40),
+          ]),
         ),
       ],
     );
   }
-}
-
-class _ZoomBtn extends StatelessWidget {
-  final String label;
-  const _ZoomBtn(this.label);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 36, height: 36,
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.92),
-        borderRadius: BorderRadius.circular(0),
-      ),
-      child: Center(
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w300,
-            color: Color(0xFF1C1C1E),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _GridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = Colors.black.withOpacity(0.04)
-      ..strokeWidth = 1;
-    for (double x = 0; x < size.width; x += 28) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), p);
-    }
-    for (double y = 0; y < size.height; y += 28) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), p);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_) => false;
-}
-
-class _RoadsPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final road = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    road
-      ..color = Colors.white.withOpacity(0.9)
-      ..strokeWidth = 10;
-    canvas.drawPath(
-      Path()
-        ..moveTo(0, size.height * 0.50)
-        ..quadraticBezierTo(size.width * 0.4, size.height * 0.33,
-            size.width * 0.6, size.height * 0.50)
-        ..quadraticBezierTo(size.width * 0.8, size.height * 0.65,
-            size.width, size.height * 0.44),
-      road,
-    );
-
-    road
-      ..color = Colors.white.withOpacity(0.8)
-      ..strokeWidth = 7;
-    canvas.drawPath(
-      Path()
-        ..moveTo(0, size.height * 0.70)
-        ..quadraticBezierTo(size.width * 0.3, size.height * 0.78,
-            size.width * 0.6, size.height * 0.62)
-        ..quadraticBezierTo(size.width * 0.8, size.height * 0.55,
-            size.width, size.height * 0.70),
-      road,
-    );
-
-    road
-      ..color = Colors.white.withOpacity(0.85)
-      ..strokeWidth = 9;
-    canvas.drawPath(
-      Path()
-        ..moveTo(size.width * 0.43, 0)
-        ..quadraticBezierTo(size.width * 0.46, size.height * 0.45,
-            size.width * 0.50, size.height),
-      road,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_) => false;
 }
