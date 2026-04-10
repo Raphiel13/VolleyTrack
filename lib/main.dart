@@ -186,7 +186,7 @@ class _MainShellState extends State<MainShell> {
         ),
         child: ClipRect(
           child: BackdropFilter(
-            filter: ColorFilter.mode(
+            filter: const ColorFilter.mode(
               Colors.transparent,
               BlendMode.multiply,
             ),
@@ -206,6 +206,9 @@ class _MainShellState extends State<MainShell> {
 
 // ─── Tab Navigator ────────────────────────────────────────────────────────────
 
+/// Wraps each tab's content in an independent [Navigator].
+/// Allows each tab to maintain its own route stack.
+/// Tapping the active tab pops to root via [MainShell._switchTab].
 class _TabNav extends StatelessWidget {
   final GlobalKey<NavigatorState> navKey;
   final Widget child;
