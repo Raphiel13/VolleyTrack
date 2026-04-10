@@ -90,12 +90,8 @@ class HomeScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: IosCard(
                 child: Column(
-                  children: MockData.games
-                      .take(3)
-                      .toList()
-                      .asMap()
-                      .entries
-                      .map((e) {
+                  children:
+                      MockData.games.take(3).toList().asMap().entries.map((e) {
                     final g = e.value;
                     final i = e.key;
                     return Column(
@@ -208,8 +204,7 @@ class _HeroBanner extends StatelessWidget {
             right: -10,
             child: Opacity(
               opacity: 0.12,
-              child: Text('🏐',
-                  style: TextStyle(fontSize: 100)),
+              child: Text('🏐', style: TextStyle(fontSize: 100)),
             ),
           ),
           Column(
@@ -241,13 +236,11 @@ class _HeroBanner extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     user.level.label,
-                    style: GoogleFonts.inter(
-                        fontSize: 13, color: Colors.white70),
+                    style:
+                        GoogleFonts.inter(fontSize: 13, color: Colors.white70),
                   ),
                   const SizedBox(width: 8),
-                  Text('·',
-                      style: GoogleFonts.inter(
-                          color: Colors.white38)),
+                  Text('·', style: GoogleFonts.inter(color: Colors.white38)),
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(
@@ -273,22 +266,21 @@ class _SeasonNum extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        value,
-        style: GoogleFonts.inter(
-          fontSize: 26,
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
-          letterSpacing: -1,
-        ),
-      ),
-      Text(label,
-          style: GoogleFonts.inter(
-              fontSize: 12, color: Colors.white70)),
-    ],
-  );
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            style: GoogleFonts.inter(
+              fontSize: 26,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+              letterSpacing: -1,
+            ),
+          ),
+          Text(label,
+              style: GoogleFonts.inter(fontSize: 12, color: Colors.white70)),
+        ],
+      );
 }
 
 // ── Quick Stat tile ───────────────────────────────────────────────────────────
@@ -319,8 +311,7 @@ class _QuickStat extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               label,
-              style: GoogleFonts.inter(
-                  fontSize: 11, color: t.label2),
+              style: GoogleFonts.inter(fontSize: 11, color: t.label2),
               textAlign: TextAlign.center,
             ),
           ],
@@ -352,8 +343,7 @@ class _GroupTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(group.emoji,
-                      style: const TextStyle(fontSize: 28)),
+                  Text(group.emoji, style: const TextStyle(fontSize: 28)),
                   const SizedBox(height: 8),
                   Text(
                     group.name,
@@ -366,20 +356,15 @@ class _GroupTile extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     '${group.members} członków',
-                    style: GoogleFonts.inter(
-                        fontSize: 12, color: t.label3),
+                    style: GoogleFonts.inter(fontSize: 12, color: t.label3),
                   ),
                   const Spacer(),
                   Text(
-                    group.isOpen
-                        ? '🔓 Zapisy otwarte'
-                        : '⏰ ${group.nextGame}',
+                    group.isOpen ? '🔓 Zapisy otwarte' : '⏰ ${group.nextGame}',
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: group.isOpen
-                          ? AppColors.green
-                          : t.label3,
+                      color: group.isOpen ? AppColors.green : t.label3,
                     ),
                   ),
                 ],

@@ -34,8 +34,7 @@ class _GameDetailSheetState extends State<GameDetailSheet> {
     return Container(
       decoration: BoxDecoration(
         color: t.bg,
-        borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom + 32,
@@ -45,7 +44,8 @@ class _GameDetailSheetState extends State<GameDetailSheet> {
         children: [
           // Handle
           Container(
-            width: 36, height: 4,
+            width: 36,
+            height: 4,
             margin: const EdgeInsets.only(top: 12, bottom: 16),
             decoration: BoxDecoration(
               color: t.label4,
@@ -90,14 +90,15 @@ class _GameDetailSheetState extends State<GameDetailSheet> {
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
                   child: Container(
-                    width: 30, height: 30,
+                    width: 30,
+                    height: 30,
                     margin: const EdgeInsets.only(left: 12),
                     decoration: BoxDecoration(
                       color: t.label4.withOpacity(0.5),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(CupertinoIcons.xmark,
-                        size: 16, color: t.label2),
+                    child:
+                        Icon(CupertinoIcons.xmark, size: 16, color: t.label2),
                   ),
                 ),
               ],
@@ -112,23 +113,20 @@ class _GameDetailSheetState extends State<GameDetailSheet> {
               child: Column(children: [
                 IosRow(
                   leading: SfIconBox(
-                      emoji: '📍',
-                      bgColor: t.label4.withOpacity(0.3)),
+                      emoji: '📍', bgColor: t.label4.withOpacity(0.3)),
                   title: Text(g.location,
                       style: GoogleFonts.inter(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
                           color: t.label)),
                   subtitle: Text('${g.distanceKm} km od Ciebie',
-                      style: GoogleFonts.inter(
-                          fontSize: 13, color: t.label2)),
+                      style: GoogleFonts.inter(fontSize: 13, color: t.label2)),
                   showChevron: false,
                 ),
                 const IosSeparator(indent: 16),
                 IosRow(
                   leading: SfIconBox(
-                      emoji: '🕐',
-                      bgColor: t.label4.withOpacity(0.3)),
+                      emoji: '🕐', bgColor: t.label4.withOpacity(0.3)),
                   title: Text(
                     '${_dayLabel(g.dateTime)}, '
                     '${g.dateTime.hour.toString().padLeft(2, '0')}:'
@@ -139,23 +137,20 @@ class _GameDetailSheetState extends State<GameDetailSheet> {
                         color: t.label),
                   ),
                   subtitle: Text('Termin',
-                      style: GoogleFonts.inter(
-                          fontSize: 13, color: t.label2)),
+                      style: GoogleFonts.inter(fontSize: 13, color: t.label2)),
                   showChevron: false,
                 ),
                 const IosSeparator(indent: 16),
                 IosRow(
                   leading: SfIconBox(
-                      emoji: '🏐',
-                      bgColor: t.label4.withOpacity(0.3)),
+                      emoji: '🏐', bgColor: t.label4.withOpacity(0.3)),
                   title: Text(g.level.label,
                       style: GoogleFonts.inter(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
                           color: t.label)),
                   subtitle: Text('Poziom gry',
-                      style: GoogleFonts.inter(
-                          fontSize: 13, color: t.label2)),
+                      style: GoogleFonts.inter(fontSize: 13, color: t.label2)),
                   showChevron: false,
                 ),
               ]),
@@ -185,9 +180,8 @@ class _GameDetailSheetState extends State<GameDetailSheet> {
                       style: GoogleFonts.inter(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: g.spotsLeft <= 2
-                            ? AppColors.red
-                            : AppColors.green,
+                        color:
+                            g.spotsLeft <= 2 ? AppColors.red : AppColors.green,
                       ),
                     ),
                   ],
@@ -199,8 +193,7 @@ class _GameDetailSheetState extends State<GameDetailSheet> {
                     (i) => Expanded(
                       child: Container(
                         height: 8,
-                        margin: EdgeInsets.only(
-                            right: i < total - 1 ? 4 : 0),
+                        margin: EdgeInsets.only(right: i < total - 1 ? 4 : 0),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(4),
                           color: i < taken
@@ -215,30 +208,29 @@ class _GameDetailSheetState extends State<GameDetailSheet> {
                 ),
                 const SizedBox(height: 8),
                 Row(
-                  mainAxisAlignment:
-                      MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(children: [
                       Container(
-                          width: 8, height: 8,
+                          width: 8,
+                          height: 8,
                           decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.blue)),
+                              shape: BoxShape.circle, color: AppColors.blue)),
                       const SizedBox(width: 5),
                       Text('$taken zapisanych',
-                          style: GoogleFonts.inter(
-                              fontSize: 11, color: t.label2)),
+                          style:
+                              GoogleFonts.inter(fontSize: 11, color: t.label2)),
                     ]),
                     Row(children: [
                       Container(
-                          width: 8, height: 8,
+                          width: 8,
+                          height: 8,
                           decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: t.label4)),
+                              shape: BoxShape.circle, color: t.label4)),
                       const SizedBox(width: 5),
                       Text('${g.spotsLeft} wolnych',
-                          style: GoogleFonts.inter(
-                              fontSize: 11, color: t.label2)),
+                          style:
+                              GoogleFonts.inter(fontSize: 11, color: t.label2)),
                     ]),
                   ],
                 ),
@@ -252,33 +244,28 @@ class _GameDetailSheetState extends State<GameDetailSheet> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: IosCard(
               child: IosRow(
-                leading: UserAvatar(
-                    name: g.organizerName, size: 36),
+                leading: UserAvatar(name: g.organizerName, size: 36),
                 title: Text(g.organizerName,
                     style: GoogleFonts.inter(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
                         color: t.label)),
-                subtitle: Text(
-                    'Organizator · ${g.organizerRating} ⭐',
-                    style: GoogleFonts.inter(
-                        fontSize: 13, color: t.label2)),
+                subtitle: Text('Organizator · ${g.organizerRating} ⭐',
+                    style: GoogleFonts.inter(fontSize: 13, color: t.label2)),
                 showChevron: false,
                 trailing: TextButton(
                   onPressed: () {},
                   style: TextButton.styleFrom(
-                    backgroundColor:
-                        AppColors.blue.withOpacity(0.1),
+                    backgroundColor: AppColors.blue.withOpacity(0.1),
                     foregroundColor: AppColors.blue,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8)),
                   ),
                   child: Text('Napisz',
                       style: GoogleFonts.inter(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600)),
+                          fontSize: 13, fontWeight: FontWeight.w600)),
                 ),
               ),
             ),
@@ -300,24 +287,22 @@ class _GameDetailSheetState extends State<GameDetailSheet> {
   }
 
   Widget _joinBtn(BuildContext context) => SizedBox(
-    width: double.infinity,
-    child: ElevatedButton(
-      onPressed: () => setState(() => _joined = true),
-      child: const Text('Zapisz się'),
-    ),
-  );
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: () => setState(() => _joined = true),
+          child: const Text('Zapisz się'),
+        ),
+      );
 
-  Widget _joinedState(BuildContext context, AppTokens t) =>
-      Column(children: [
+  Widget _joinedState(BuildContext context, AppTokens t) => Column(children: [
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: AppColors.green.withOpacity(0.12),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-                color: AppColors.green.withOpacity(0.3),
-                width: 1.5),
+            border:
+                Border.all(color: AppColors.green.withOpacity(0.3), width: 1.5),
           ),
           child: Column(children: [
             Text('✓ Zapisano!',
@@ -327,8 +312,7 @@ class _GameDetailSheetState extends State<GameDetailSheet> {
                     color: AppColors.green)),
             const SizedBox(height: 3),
             Text('Dostaniesz przypomnienie dzień wcześniej',
-                style: GoogleFonts.inter(
-                    fontSize: 13, color: t.label2)),
+                style: GoogleFonts.inter(fontSize: 13, color: t.label2)),
           ]),
         ),
         const SizedBox(height: 10),
@@ -338,23 +322,19 @@ class _GameDetailSheetState extends State<GameDetailSheet> {
             onPressed: () => setState(() => _joined = false),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.red,
-              side: BorderSide(
-                  color: AppColors.red.withOpacity(0.3)),
-              padding:
-                  const EdgeInsets.symmetric(vertical: 14),
+              side: BorderSide(color: AppColors.red.withOpacity(0.3)),
+              padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14)),
             ),
             child: Text('Wypisz się',
                 style: GoogleFonts.inter(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500)),
+                    fontSize: 15, fontWeight: FontWeight.w500)),
           ),
         ),
       ]);
 
-  Widget _disabledBtn(
-          BuildContext context, String label, AppTokens t) =>
+  Widget _disabledBtn(BuildContext context, String label, AppTokens t) =>
       SizedBox(
         width: double.infinity,
         child: ElevatedButton(
