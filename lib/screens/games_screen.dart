@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
 import '../widgets/ios_widgets.dart';
+import 'game_detail_sheet.dart';
 
 enum _ViewMode { list, map }
 
@@ -31,6 +32,15 @@ class _GamesScreenState extends State<GamesScreen> {
         final mr = g.distanceKm <= _radius;
         return ms && ml && mc && mr;
       }).toList();
+
+  void _openGame(NearbyGame g) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => GameDetailSheet(game: g),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +93,7 @@ class _GamesScreenState extends State<GamesScreen> {
               games: _filtered,
               user: widget.user,
               radius: _radius,
-              onOpen: (_) {},
+              onOpen: _openGame,
             ),
           )
         else
@@ -133,7 +143,6 @@ class _FilterHeader extends SliverPersistentHeaderDelegate {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       child: Column(
         children: [
-          // Search bar
           Container(
             height: 42,
             decoration: BoxDecoration(
@@ -167,7 +176,6 @@ class _FilterHeader extends SliverPersistentHeaderDelegate {
             ),
           ),
           const SizedBox(height: 10),
-          // Segmented control + filter chips
           Row(
             children: [
               SizedBox(
@@ -190,32 +198,24 @@ class _FilterHeader extends SliverPersistentHeaderDelegate {
                       _chip(context, 'Wszystkie', filterLevel == null,
                           () => onLevel(null)),
                       ...PlayerLevel.values.map((l) => _chip(
-                          context,
-                          l.label,
-                          filterLevel == l,
+                          context, l.label, filterLevel == l,
                           () => onLevel(l))),
                       Container(
-                        width: 1,
-                        height: 20,
-                        margin: const EdgeInsets.symmetric(horizontal: 6),
+                        width: 1, height: 20,
+                        margin:
+                            const EdgeInsets.symmetric(horizontal: 6),
                         color: t.separator,
                       ),
-                      _chip(
-                        context,
-                        '🏛️ Hala',
-                        filterCat == GameCategory.indoor,
-                        () => onCat(filterCat == GameCategory.indoor
-                            ? null
-                            : GameCategory.indoor),
-                      ),
-                      _chip(
-                        context,
-                        '🏖️ Plaża',
-                        filterCat == GameCategory.beach,
-                        () => onCat(filterCat == GameCategory.beach
-                            ? null
-                            : GameCategory.beach),
-                      ),
+                      _chip(context, '🏛️ Hala',
+                          filterCat == GameCategory.indoor,
+                          () => onCat(filterCat == GameCategory.indoor
+                              ? null
+                              : GameCategory.indoor)),
+                      _chip(context, '🏖️ Plaża',
+                          filterCat == GameCategory.beach,
+                          () => onCat(filterCat == GameCategory.beach
+                              ? null
+                              : GameCategory.beach)),
                     ],
                   ),
                 ),
@@ -227,14 +227,16 @@ class _FilterHeader extends SliverPersistentHeaderDelegate {
     );
   }
 
-  Widget _chip(BuildContext ctx, String lbl, bool active, VoidCallback onTap) {
+  Widget _chip(
+      BuildContext ctx, String lbl, bool active, VoidCallback onTap) {
     final t = AppTokens.of(ctx);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         margin: const EdgeInsets.only(right: 7),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: active ? AppColors.blue : const Color(0x1E767680),
           borderRadius: BorderRadius.circular(8),
@@ -298,7 +300,8 @@ class _ListView extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               'Zwiększ zasięg powyżej',
-              style: GoogleFonts.inter(fontSize: 14, color: t.label3),
+              style: GoogleFonts.inter(
+                  fontSize: 14, color: t.label3),
             ),
           ],
         ),
@@ -320,10 +323,7 @@ class _ListView extends StatelessWidget {
             ...matchGames.map((g) => Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: GameCard(
-                    game: g,
-                    isMatch: true,
-                    onTap: () => onOpen(g),
-                  ),
+                      game: g, isMatch: true, onTap: () => onOpen(g)),
                 )),
           ],
           if (otherGames.isNotEmpty) ...[
@@ -331,7 +331,8 @@ class _ListView extends StatelessWidget {
             _divider(context, 'Pozostałe gry'),
             ...otherGames.map((g) => Padding(
                   padding: const EdgeInsets.only(bottom: 10),
-                  child: GameCard(game: g, onTap: () => onOpen(g)),
+                  child:
+                      GameCard(game: g, onTap: () => onOpen(g)),
                 )),
           ],
         ],
@@ -345,7 +346,8 @@ class _ListView extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-              child: Divider(color: AppTokens.of(context).separator)),
+              child:
+                  Divider(color: AppTokens.of(context).separator)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Text(
@@ -358,14 +360,15 @@ class _ListView extends StatelessWidget {
             ),
           ),
           Expanded(
-              child: Divider(color: AppTokens.of(context).separator)),
+              child:
+                  Divider(color: AppTokens.of(context).separator)),
         ],
       ),
     );
   }
 }
 
-// ── Map placeholder (implemented in next commit) ───────────────────────────────
+// ── Map placeholder ───────────────────────────────────────────────────────────
 
 class _MapPlaceholder extends StatelessWidget {
   final double radius;
@@ -382,10 +385,7 @@ class _MapPlaceholder extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
       ),
       child: const Center(
-        child: Text(
-          '🗺️',
-          style: TextStyle(fontSize: 48),
-        ),
+        child: Text('🗺️', style: TextStyle(fontSize: 48)),
       ),
     );
   }
