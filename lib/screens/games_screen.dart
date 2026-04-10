@@ -168,14 +168,13 @@ class _FilterHeader extends SliverPersistentHeaderDelegate {
                     decoration: InputDecoration(
                       hintText: 'Szukaj gier, lokalizacji…',
                       border: InputBorder.none,
-                      hintStyle: GoogleFonts.inter(
-                          fontSize: 17, color: t.label3),
+                      hintStyle:
+                          GoogleFonts.inter(fontSize: 17, color: t.label3),
                       isDense: true,
                       contentPadding: EdgeInsets.zero,
                       filled: false,
                     ),
-                    style:
-                        GoogleFonts.inter(fontSize: 17, color: t.label),
+                    style: GoogleFonts.inter(fontSize: 17, color: t.label),
                   ),
                 ),
               ],
@@ -202,8 +201,8 @@ class _FilterHeader extends SliverPersistentHeaderDelegate {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      _chip(context, 'Wszystkie',
-                          filterLevel == null, () => onLevel(null)),
+                      _chip(context, 'Wszystkie', filterLevel == null,
+                          () => onLevel(null)),
                       ...PlayerLevel.values.map((l) => _chip(
                             context,
                             l.label,
@@ -213,8 +212,7 @@ class _FilterHeader extends SliverPersistentHeaderDelegate {
                       Container(
                         width: 1,
                         height: 20,
-                        margin:
-                            const EdgeInsets.symmetric(horizontal: 6),
+                        margin: const EdgeInsets.symmetric(horizontal: 6),
                         color: t.separator,
                       ),
                       _chip(
@@ -244,16 +242,14 @@ class _FilterHeader extends SliverPersistentHeaderDelegate {
     );
   }
 
-  Widget _chip(
-      BuildContext ctx, String lbl, bool active, VoidCallback onTap) {
+  Widget _chip(BuildContext ctx, String lbl, bool active, VoidCallback onTap) {
     final t = AppTokens.of(ctx);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         margin: const EdgeInsets.only(right: 7),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: active ? AppColors.blue : const Color(0x1E767680),
           borderRadius: BorderRadius.circular(8),
@@ -317,18 +313,15 @@ class _ListView extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               'Zwiększ zasięg powyżej',
-              style:
-                  GoogleFonts.inter(fontSize: 14, color: t.label3),
+              style: GoogleFonts.inter(fontSize: 14, color: t.label3),
             ),
           ],
         ),
       );
     }
 
-    final matchGames =
-        games.where((g) => g.matchesUser(user)).toList();
-    final otherGames =
-        games.where((g) => !g.matchesUser(user)).toList();
+    final matchGames = games.where((g) => g.matchesUser(user)).toList();
+    final otherGames = games.where((g) => !g.matchesUser(user)).toList();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -364,8 +357,7 @@ class _ListView extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         children: [
-          Expanded(
-              child: Divider(color: AppTokens.of(context).separator)),
+          Expanded(child: Divider(color: AppTokens.of(context).separator)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Text(
@@ -377,8 +369,7 @@ class _ListView extends StatelessWidget {
               ),
             ),
           ),
-          Expanded(
-              child: Divider(color: AppTokens.of(context).separator)),
+          Expanded(child: Divider(color: AppTokens.of(context).separator)),
         ],
       ),
     );
@@ -424,17 +415,14 @@ class _MapViewState extends State<_MapView> {
           : '${v.toStringAsFixed(1)} km';
 
   // ── Pin bubble widget ────────────────────────────────────────────
-  Widget _buildPinBubble(NearbyGame g, bool isMatch,
-      {required bool inRadius}) {
+  Widget _buildPinBubble(NearbyGame g, bool isMatch, {required bool inRadius}) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color:
-                isMatch && inRadius ? AppColors.blue : Colors.white,
+            color: isMatch && inRadius ? AppColors.blue : Colors.white,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
@@ -469,8 +457,7 @@ class _MapViewState extends State<_MapView> {
           height: 8,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color:
-                isMatch && inRadius ? AppColors.blue : Colors.white,
+            color: isMatch && inRadius ? AppColors.blue : Colors.white,
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.12),
@@ -499,21 +486,16 @@ class _MapViewState extends State<_MapView> {
               child: LayoutBuilder(builder: (ctx, constraints) {
                 final w = constraints.maxWidth;
                 final h = constraints.maxHeight;
-                final rPx =
-                    (rFrac * 100 + 20).clamp(20.0, 120.0);
+                final rPx = (rFrac * 100 + 20).clamp(20.0, 120.0);
 
                 return Stack(
                   children: [
                     // Background
                     Container(color: const Color(0xFFE8F0E9)),
                     // Grid
-                    CustomPaint(
-                        painter: _GridPainter(),
-                        size: Size(w, h)),
+                    CustomPaint(painter: _GridPainter(), size: Size(w, h)),
                     // Roads
-                    CustomPaint(
-                        painter: _RoadsPainter(),
-                        size: Size(w, h)),
+                    CustomPaint(painter: _RoadsPainter(), size: Size(w, h)),
 
                     // Radius ring
                     Positioned(
@@ -545,8 +527,7 @@ class _MapViewState extends State<_MapView> {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: AppColors.blue,
-                          border:
-                              Border.all(color: Colors.white, width: 3),
+                          border: Border.all(color: Colors.white, width: 3),
                           boxShadow: [
                             BoxShadow(
                               color: AppColors.blue.withOpacity(0.4),
@@ -560,8 +541,7 @@ class _MapViewState extends State<_MapView> {
 
                     // Pins in radius – interactive
                     ...widget.allGames
-                        .where((g) =>
-                            widget.filteredGames.contains(g))
+                        .where((g) => widget.filteredGames.contains(g))
                         .map((g) {
                       final pos = _positions[g.id];
                       if (pos == null) return const SizedBox();
@@ -570,21 +550,16 @@ class _MapViewState extends State<_MapView> {
                         left: w * pos.$1 - 40,
                         top: h * pos.$2 - 36,
                         child: GestureDetector(
-                          onTap: () => setState(() =>
-                              _pinSelected =
-                                  _pinSelected?.id == g.id
-                                      ? null
-                                      : g),
-                          child: _buildPinBubble(g, isMatch,
-                              inRadius: true),
+                          onTap: () => setState(() => _pinSelected =
+                              _pinSelected?.id == g.id ? null : g),
+                          child: _buildPinBubble(g, isMatch, inRadius: true),
                         ),
                       );
                     }),
 
                     // Pins outside radius – non-interactive, greyed out
                     ...widget.allGames
-                        .where((g) =>
-                            !widget.filteredGames.contains(g))
+                        .where((g) => !widget.filteredGames.contains(g))
                         .map((g) {
                       final pos = _positions[g.id];
                       if (pos == null) return const SizedBox();
@@ -596,13 +571,28 @@ class _MapViewState extends State<_MapView> {
                             opacity: 0.25,
                             child: ColorFiltered(
                               colorFilter: const ColorFilter.matrix([
-                                0.2126, 0.7152, 0.0722, 0, 0,
-                                0.2126, 0.7152, 0.0722, 0, 0,
-                                0.2126, 0.7152, 0.0722, 0, 0,
-                                0,      0,      0,      1, 0,
+                                0.2126,
+                                0.7152,
+                                0.0722,
+                                0,
+                                0,
+                                0.2126,
+                                0.7152,
+                                0.0722,
+                                0,
+                                0,
+                                0.2126,
+                                0.7152,
+                                0.0722,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                1,
+                                0,
                               ]),
-                              child: _buildPinBubble(g, false,
-                                  inRadius: false),
+                              child: _buildPinBubble(g, false, inRadius: false),
                             ),
                           ),
                         ),
@@ -623,8 +613,7 @@ class _MapViewState extends State<_MapView> {
                             borderRadius: BorderRadius.circular(8),
                             boxShadow: [
                               BoxShadow(
-                                color:
-                                    Colors.black.withOpacity(0.08),
+                                color: Colors.black.withOpacity(0.08),
                                 blurRadius: 8,
                               ),
                             ],
@@ -767,8 +756,8 @@ class _RoadsPainter extends CustomPainter {
         ..moveTo(0, size.height * 0.50)
         ..quadraticBezierTo(size.width * 0.4, size.height * 0.33,
             size.width * 0.6, size.height * 0.50)
-        ..quadraticBezierTo(size.width * 0.8, size.height * 0.65,
-            size.width, size.height * 0.44),
+        ..quadraticBezierTo(size.width * 0.8, size.height * 0.65, size.width,
+            size.height * 0.44),
       road,
     );
 
@@ -780,8 +769,8 @@ class _RoadsPainter extends CustomPainter {
         ..moveTo(0, size.height * 0.70)
         ..quadraticBezierTo(size.width * 0.3, size.height * 0.78,
             size.width * 0.6, size.height * 0.62)
-        ..quadraticBezierTo(size.width * 0.8, size.height * 0.55,
-            size.width, size.height * 0.70),
+        ..quadraticBezierTo(size.width * 0.8, size.height * 0.55, size.width,
+            size.height * 0.70),
       road,
     );
 

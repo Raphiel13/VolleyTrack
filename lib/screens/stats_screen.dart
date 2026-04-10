@@ -45,15 +45,13 @@ class _StatsScreenState extends State<StatsScreen> {
                       ),
                       Text(
                         'Sezon 2025',
-                        style: GoogleFonts.inter(
-                            fontSize: 15, color: t.label3),
+                        style: GoogleFonts.inter(fontSize: 15, color: t.label3),
                       ),
                     ],
                   ),
                 ),
               ),
             ),
-
             SliverList(
               delegate: SliverChildListDelegate([
                 const SizedBox(height: 16),
@@ -109,18 +107,16 @@ class _StatsScreenState extends State<StatsScreen> {
                 ),
 
                 // ── Activity chart ─────────────────────────────────
-                SectionLabel('Aktywność tego tygodnia'),
+                const SectionLabel('Aktywność tego tygodnia'),
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: IosCard(
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
                               '3 mecze w tym tygodniu',
@@ -130,7 +126,7 @@ class _StatsScreenState extends State<StatsScreen> {
                                 color: t.label,
                               ),
                             ),
-                            ChipBadge('↑ aktywny',
+                            const ChipBadge('↑ aktywny',
                                 variant: ChipVariant.green),
                           ],
                         ),
@@ -139,67 +135,50 @@ class _StatsScreenState extends State<StatsScreen> {
                           height: 100,
                           child: BarChart(
                             BarChartData(
-                              alignment:
-                                  BarChartAlignment.spaceAround,
+                              alignment: BarChartAlignment.spaceAround,
                               maxY: 1.0,
-                              barTouchData:
-                                  BarTouchData(enabled: false),
-                              gridData: FlGridData(show: false),
-                              borderData:
-                                  FlBorderData(show: false),
+                              barTouchData: BarTouchData(enabled: false),
+                              gridData: const FlGridData(show: false),
+                              borderData: FlBorderData(show: false),
                               titlesData: FlTitlesData(
-                                leftTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                        showTitles: false)),
-                                rightTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                        showTitles: false)),
-                                topTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                        showTitles: false)),
+                                leftTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false)),
+                                rightTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false)),
+                                topTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false)),
                                 bottomTitles: AxisTitles(
                                   sideTitles: SideTitles(
                                     showTitles: true,
-                                    getTitlesWidget: (v, _) =>
-                                        Padding(
-                                      padding: const EdgeInsets
-                                          .only(top: 6),
+                                    getTitlesWidget: (v, _) => Padding(
+                                      padding: const EdgeInsets.only(top: 6),
                                       child: Text(
                                         _days[v.toInt()],
                                         style: GoogleFonts.inter(
                                           fontSize: 11,
                                           color: t.label3,
-                                          fontWeight:
-                                              FontWeight.w500,
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                     ),
                                   ),
                                 ),
                               ),
-                              barGroups:
-                                  List.generate(7, (i) {
+                              barGroups: List.generate(7, (i) {
                                 final val = _activity[i];
                                 final isMax = val == 1.0;
                                 return BarChartGroupData(
                                   x: i,
                                   barRods: [
                                     BarChartRodData(
-                                      toY: val == 0
-                                          ? 0.05
-                                          : val,
+                                      toY: val == 0 ? 0.05 : val,
                                       width: 22,
-                                      borderRadius:
-                                          const BorderRadius
-                                              .vertical(
-                                              top: Radius
-                                                  .circular(5)),
+                                      borderRadius: const BorderRadius.vertical(
+                                          top: Radius.circular(5)),
                                       gradient: isMax
                                           ? const LinearGradient(
-                                              begin: Alignment
-                                                  .topCenter,
-                                              end: Alignment
-                                                  .bottomCenter,
+                                              begin: Alignment.topCenter,
+                                              end: Alignment.bottomCenter,
                                               colors: [
                                                 AppColors.blue,
                                                 Color(0x803B7BFF),
@@ -208,19 +187,13 @@ class _StatsScreenState extends State<StatsScreen> {
                                           : LinearGradient(
                                               colors: [
                                                 val > 0
-                                                    ? AppColors
-                                                        .blue
-                                                        .withOpacity(
-                                                            0.3)
-                                                    : const Color(
-                                                        0x1E767680),
+                                                    ? AppColors.blue
+                                                        .withOpacity(0.3)
+                                                    : const Color(0x1E767680),
                                                 val > 0
-                                                    ? AppColors
-                                                        .blue
-                                                        .withOpacity(
-                                                            0.3)
-                                                    : const Color(
-                                                        0x1E767680),
+                                                    ? AppColors.blue
+                                                        .withOpacity(0.3)
+                                                    : const Color(0x1E767680),
                                               ],
                                             ),
                                     ),
@@ -236,10 +209,9 @@ class _StatsScreenState extends State<StatsScreen> {
                 ),
 
                 // ── Season detail ──────────────────────────────────
-                SectionLabel('Sezon – szczegóły'),
+                const SectionLabel('Sezon – szczegóły'),
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: IosCard(
                     child: Column(
                       children: [
@@ -248,8 +220,7 @@ class _StatsScreenState extends State<StatsScreen> {
                         ('🤝', 'Przyjęcia', '38', AppColors.green),
                         ('❌', 'Błędy', '7', AppColors.red),
                       ].asMap().entries.map((e) {
-                        final (emoji, label, val, color) =
-                            e.value;
+                        final (emoji, label, val, color) = e.value;
                         return Column(children: [
                           IosRow(
                             leading: SfIconBox(
@@ -258,8 +229,7 @@ class _StatsScreenState extends State<StatsScreen> {
                             ),
                             title: Text(label,
                                 style: GoogleFonts.inter(
-                                    fontSize: 16,
-                                    color: t.label)),
+                                    fontSize: 16, color: t.label)),
                             trailing: Text(
                               val,
                               style: GoogleFonts.inter(
@@ -269,7 +239,7 @@ class _StatsScreenState extends State<StatsScreen> {
                               ),
                             ),
                           ),
-                          if (e.key < 3) IosSeparator(),
+                          if (e.key < 3) const IosSeparator(),
                         ]);
                       }).toList(),
                     ),
@@ -278,11 +248,9 @@ class _StatsScreenState extends State<StatsScreen> {
 
                 // ── Match history header ───────────────────────────
                 Padding(
-                  padding:
-                      const EdgeInsets.fromLTRB(20, 22, 20, 7),
+                  padding: const EdgeInsets.fromLTRB(20, 22, 20, 7),
                   child: Row(
-                    mainAxisAlignment:
-                        MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         'HISTORIA MECZÓW',
@@ -293,22 +261,19 @@ class _StatsScreenState extends State<StatsScreen> {
                         ),
                       ),
                       TextButton(
-                        onPressed: () =>
-                            setState(() => _showAddSheet = true),
+                        onPressed: () => setState(() => _showAddSheet = true),
                         style: TextButton.styleFrom(
                           backgroundColor: AppColors.blue,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 7),
                           shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(8)),
+                              borderRadius: BorderRadius.circular(8)),
                         ),
                         child: Text(
                           '+ Dodaj',
                           style: GoogleFonts.inter(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600),
+                              fontSize: 13, fontWeight: FontWeight.w600),
                         ),
                       ),
                     ],
@@ -317,14 +282,10 @@ class _StatsScreenState extends State<StatsScreen> {
 
                 // ── Match history list ─────────────────────────────
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: IosCard(
                     child: Column(
-                      children: MockData.matches
-                          .asMap()
-                          .entries
-                          .map((e) {
+                      children: MockData.matches.asMap().entries.map((e) {
                         final m = e.value;
                         final i = e.key;
                         return Column(children: [
@@ -334,12 +295,9 @@ class _StatsScreenState extends State<StatsScreen> {
                               height: 32,
                               decoration: BoxDecoration(
                                 color: m.isWin
-                                    ? AppColors.green
-                                        .withOpacity(0.12)
-                                    : AppColors.red
-                                        .withOpacity(0.12),
-                                borderRadius:
-                                    BorderRadius.circular(8),
+                                    ? AppColors.green.withOpacity(0.12)
+                                    : AppColors.red.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(8),
                               ),
                               child: Center(
                                 child: Text(
@@ -365,22 +323,19 @@ class _StatsScreenState extends State<StatsScreen> {
                             subtitle: Text(
                               '${m.date} · ${m.score}',
                               style: GoogleFonts.inter(
-                                  fontSize: 13,
-                                  color: t.label2),
+                                  fontSize: 13, color: t.label2),
                             ),
                             trailing: Text(
                               '${m.points} pkt',
                               style: GoogleFonts.inter(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w700,
-                                color: m.isWin
-                                    ? AppColors.green
-                                    : t.label2,
+                                color: m.isWin ? AppColors.green : t.label2,
                               ),
                             ),
                           ),
                           if (i < MockData.matches.length - 1)
-                            IosSeparator(),
+                            const IosSeparator(),
                         ]);
                       }).toList(),
                     ),
@@ -394,9 +349,7 @@ class _StatsScreenState extends State<StatsScreen> {
 
         // ── Add match sheet overlay ──────────────────────────────────
         if (_showAddSheet)
-          _AddMatchSheet(
-              onClose: () =>
-                  setState(() => _showAddSheet = false)),
+          _AddMatchSheet(onClose: () => setState(() => _showAddSheet = false)),
       ],
     );
   }
@@ -429,15 +382,14 @@ class _AddMatchSheetState extends State<_AddMatchSheet> {
             child: Container(
               decoration: BoxDecoration(
                 color: t.bg,
-                borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(24)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(24)),
               ),
               padding: EdgeInsets.only(
                 left: 20,
                 right: 20,
                 top: 0,
-                bottom:
-                    MediaQuery.of(context).viewInsets.bottom + 32,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 32,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -447,8 +399,7 @@ class _AddMatchSheetState extends State<_AddMatchSheet> {
                     child: Container(
                       width: 36,
                       height: 4,
-                      margin:
-                          const EdgeInsets.symmetric(vertical: 12),
+                      margin: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
                         color: t.label4,
                         borderRadius: BorderRadius.circular(99),
@@ -464,25 +415,20 @@ class _AddMatchSheetState extends State<_AddMatchSheet> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  ...['Rywal / drużyna', 'Wynik (np. 3–1)',
-                      'Twoje punkty']
+                  ...['Rywal / drużyna', 'Wynik (np. 3–1)', 'Twoje punkty']
                       .map((h) => Padding(
-                            padding:
-                                const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.only(bottom: 10),
                             child: TextField(
-                              decoration:
-                                  InputDecoration(hintText: h),
+                              decoration: InputDecoration(hintText: h),
                             ),
                           )),
                   Row(children: [
                     Expanded(
-                        child: _resultBtn(
-                            '✓ Wygrana', _win == true,
+                        child: _resultBtn('✓ Wygrana', _win == true,
                             () => setState(() => _win = true))),
                     const SizedBox(width: 10),
                     Expanded(
-                        child: _resultBtn(
-                            '✗ Przegrana', _win == false,
+                        child: _resultBtn('✗ Przegrana', _win == false,
                             () => setState(() => _win = false))),
                   ]),
                   const SizedBox(height: 16),
@@ -502,8 +448,7 @@ class _AddMatchSheetState extends State<_AddMatchSheet> {
     );
   }
 
-  Widget _resultBtn(
-      String lbl, bool active, VoidCallback onTap) {
+  Widget _resultBtn(String lbl, bool active, VoidCallback onTap) {
     final t = AppTokens.of(context);
     return GestureDetector(
       onTap: onTap,
@@ -511,9 +456,7 @@ class _AddMatchSheetState extends State<_AddMatchSheet> {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: active
-              ? AppColors.blue.withOpacity(0.1)
-              : t.bg2,
+          color: active ? AppColors.blue.withOpacity(0.1) : t.bg2,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: active ? AppColors.blue : t.separator,

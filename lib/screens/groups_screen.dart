@@ -66,13 +66,12 @@ class GroupsScreen extends StatelessWidget {
             ),
           ),
         ),
-
         SliverList(
           delegate: SliverChildListDelegate([
             const SizedBox(height: 16),
             _NotificationBanner(),
             const SizedBox(height: 4),
-            SectionLabel('Moje grupy'),
+            const SectionLabel('Moje grupy'),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: IosCard(
@@ -83,13 +82,13 @@ class GroupsScreen extends StatelessWidget {
                     return Column(children: [
                       _GroupRow(group: g, onTap: () => onOpenChat(g)),
                       if (i < MockData.groups.length - 1)
-                        IosSeparator(indent: 16),
+                        const IosSeparator(indent: 16),
                     ]);
                   }).toList(),
                 ),
               ),
             ),
-            SectionLabel('Ekipa Piątkowa – Skład'),
+            const SectionLabel('Ekipa Piątkowa – Skład'),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: IosCard(
@@ -109,12 +108,12 @@ class GroupsScreen extends StatelessWidget {
                               )),
                           if (isAdmin) ...[
                             const SizedBox(width: 6),
-                            ChipBadge('Admin',
+                            const ChipBadge('Admin',
                                 variant: ChipVariant.orange),
                           ],
                           if (isMe) ...[
                             const SizedBox(width: 6),
-                            ChipBadge('Ty', variant: ChipVariant.blue),
+                            const ChipBadge('Ty', variant: ChipVariant.blue),
                           ],
                         ]),
                         subtitle: Text(pos,
@@ -122,7 +121,7 @@ class GroupsScreen extends StatelessWidget {
                                 fontSize: 13, color: t.label2)),
                         trailing: LevelDots(level: level),
                       ),
-                      if (e.key < _members.length - 1) IosSeparator(),
+                      if (e.key < _members.length - 1) const IosSeparator(),
                     ]);
                   }).toList(),
                 ),
@@ -167,8 +166,7 @@ class _NotificationBanner extends StatelessWidget {
                           color: t.label)),
                   const SizedBox(height: 3),
                   Text('Admin otworzył zapisy na sobotę 10:00!',
-                      style: GoogleFonts.inter(
-                          fontSize: 13, color: t.label2)),
+                      style: GoogleFonts.inter(fontSize: 13, color: t.label2)),
                   const SizedBox(height: 10),
                   Row(children: [
                     _confirmBtn(context, '✓ Będę'),
@@ -189,8 +187,7 @@ class _NotificationBanner extends StatelessWidget {
     return GestureDetector(
       onTap: () {},
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: t.bg2,
           borderRadius: BorderRadius.circular(10),
@@ -198,9 +195,7 @@ class _NotificationBanner extends StatelessWidget {
         ),
         child: Text(lbl,
             style: GoogleFonts.inter(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: t.label)),
+                fontSize: 13, fontWeight: FontWeight.w500, color: t.label)),
       ),
     );
   }
@@ -230,19 +225,15 @@ class _GroupRow extends StatelessWidget {
           ),
           title: Text(group.name,
               style: GoogleFonts.inter(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: t.label)),
+                  fontSize: 15, fontWeight: FontWeight.w500, color: t.label)),
           subtitle: Row(children: [
             Text('${group.members} członków · ',
-                style:
-                    GoogleFonts.inter(fontSize: 13, color: t.label2)),
+                style: GoogleFonts.inter(fontSize: 13, color: t.label2)),
             Text(
               group.isOpen ? 'Zapisy otwarte' : group.nextGame ?? '',
               style: GoogleFonts.inter(
                   fontSize: 13,
-                  color:
-                      group.isOpen ? AppColors.green : t.label2),
+                  color: group.isOpen ? AppColors.green : t.label2),
             ),
           ]),
         ),
@@ -324,8 +315,7 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  String _fmt(DateTime dt) =>
-      '${dt.hour.toString().padLeft(2, '0')}:'
+  String _fmt(DateTime dt) => '${dt.hour.toString().padLeft(2, '0')}:'
       '${dt.minute.toString().padLeft(2, '0')}';
 
   @override
@@ -343,12 +333,9 @@ class _ChatScreenState extends State<ChatScreen> {
         title: Column(children: [
           Text(widget.group.name,
               style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: t.label)),
+                  fontSize: 16, fontWeight: FontWeight.w600, color: t.label)),
           Text('${widget.group.members} członków',
-              style:
-                  GoogleFonts.inter(fontSize: 12, color: t.label2)),
+              style: GoogleFonts.inter(fontSize: 12, color: t.label2)),
         ]),
         actions: isAdmin
             ? [
@@ -368,8 +355,7 @@ class _ChatScreenState extends State<ChatScreen> {
               controller: _scroll,
               padding: const EdgeInsets.all(16),
               itemCount: _messages.length,
-              itemBuilder: (_, i) =>
-                  _MessageBubble(msg: _messages[i]),
+              itemBuilder: (_, i) => _MessageBubble(msg: _messages[i]),
             ),
           ),
           Container(
@@ -383,15 +369,13 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             decoration: BoxDecoration(
               color: t.glassBg,
-              border: Border(
-                  top: BorderSide(color: t.separator, width: 0.5)),
+              border: Border(top: BorderSide(color: t.separator, width: 0.5)),
             ),
             child: Row(children: [
               Expanded(
                 child: TextField(
                   controller: _ctrl,
-                  decoration:
-                      const InputDecoration(hintText: 'Wiadomość'),
+                  decoration: const InputDecoration(hintText: 'Wiadomość'),
                   onSubmitted: (_) => _send(),
                 ),
               ),
@@ -402,8 +386,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   width: 36,
                   height: 36,
                   decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.blue),
+                      shape: BoxShape.circle, color: AppColors.blue),
                   child: const Icon(Icons.arrow_upward,
                       color: Colors.white, size: 18),
                 ),
@@ -422,8 +405,7 @@ class _MessageBubble extends StatelessWidget {
   final ChatMessage msg;
   const _MessageBubble({required this.msg});
 
-  String _fmt(DateTime dt) =>
-      '${dt.hour.toString().padLeft(2, '0')}:'
+  String _fmt(DateTime dt) => '${dt.hour.toString().padLeft(2, '0')}:'
       '${dt.minute.toString().padLeft(2, '0')}';
 
   @override
@@ -433,13 +415,11 @@ class _MessageBubble extends StatelessWidget {
     if (msg.isAnnouncement) {
       return Container(
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(
-            horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: AppColors.green.withOpacity(0.10),
           borderRadius: BorderRadius.circular(12),
-          border:
-              Border.all(color: AppColors.green.withOpacity(0.2)),
+          border: Border.all(color: AppColors.green.withOpacity(0.2)),
         ),
         child: Text('📣 ${msg.text}',
             style: GoogleFonts.inter(
@@ -452,9 +432,8 @@ class _MessageBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
-        mainAxisAlignment: msg.isMe
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
+        mainAxisAlignment:
+            msg.isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!msg.isMe) ...[
@@ -462,9 +441,8 @@ class _MessageBubble extends StatelessWidget {
             const SizedBox(width: 8),
           ],
           Column(
-            crossAxisAlignment: msg.isMe
-                ? CrossAxisAlignment.end
-                : CrossAxisAlignment.start,
+            crossAxisAlignment:
+                msg.isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
               if (!msg.isMe)
                 Padding(
@@ -477,17 +455,15 @@ class _MessageBubble extends StatelessWidget {
                 ),
               Container(
                 constraints: const BoxConstraints(maxWidth: 240),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
                   color: msg.isMe ? AppColors.blue : t.bg2,
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(18),
                     topRight: const Radius.circular(18),
-                    bottomLeft:
-                        Radius.circular(msg.isMe ? 18 : 4),
-                    bottomRight:
-                        Radius.circular(msg.isMe ? 4 : 18),
+                    bottomLeft: Radius.circular(msg.isMe ? 18 : 4),
+                    bottomRight: Radius.circular(msg.isMe ? 4 : 18),
                   ),
                   boxShadow: msg.isMe
                       ? null
@@ -502,15 +478,13 @@ class _MessageBubble extends StatelessWidget {
                 child: Text(msg.text,
                     style: GoogleFonts.inter(
                         fontSize: 15,
-                        color:
-                            msg.isMe ? Colors.white : t.label,
+                        color: msg.isMe ? Colors.white : t.label,
                         height: 1.4)),
               ),
               Padding(
                 padding: const EdgeInsets.only(top: 3),
                 child: Text(_fmt(msg.timestamp),
-                    style: GoogleFonts.inter(
-                        fontSize: 11, color: t.label3)),
+                    style: GoogleFonts.inter(fontSize: 11, color: t.label3)),
               ),
             ],
           ),

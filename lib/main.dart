@@ -130,8 +130,8 @@ class _MainShellState extends State<MainShell> {
             setState(() => _tab = 3);
             Future.delayed(const Duration(milliseconds: 50), () {
               _navKeys[3].currentState?.push(MaterialPageRoute(
-                builder: (_) => ChatScreen(group: g),
-              ));
+                    builder: (_) => ChatScreen(group: g),
+                  ));
             });
           },
           onGoGames: () => setState(() => _tab = 1),
@@ -149,10 +149,10 @@ class _MainShellState extends State<MainShell> {
         navKey: _navKeys[3],
         child: GroupsScreen(
           onOpenChat: (g) => _navKeys[3].currentState?.push(
-            MaterialPageRoute(
-              builder: (_) => ChatScreen(group: g),
-            ),
-          ),
+                MaterialPageRoute(
+                  builder: (_) => ChatScreen(group: g),
+                ),
+              ),
         ),
       ),
       _TabNav(
@@ -163,8 +163,8 @@ class _MainShellState extends State<MainShell> {
             widget.onUserChanged(u);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Profil zaktualizowany',
-                    style: GoogleFonts.inter()),
+                content:
+                    Text('Profil zaktualizowany', style: GoogleFonts.inter()),
                 backgroundColor: AppColors.green,
                 behavior: SnackBarBehavior.floating,
                 shape: RoundedRectangleBorder(

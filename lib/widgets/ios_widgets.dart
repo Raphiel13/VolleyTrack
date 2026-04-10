@@ -88,8 +88,7 @@ class IosRow extends StatelessWidget {
             ],
             if (showChevron) ...[
               const SizedBox(width: 4),
-              Icon(CupertinoIcons.chevron_right,
-                  size: 14, color: t.label4),
+              Icon(CupertinoIcons.chevron_right, size: 14, color: t.label4),
             ],
           ],
         ),
@@ -244,11 +243,14 @@ class ChipBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (bg, fg) = switch (variant) {
-      ChipVariant.blue   => (AppColors.blue.withOpacity(0.12),   AppColors.blue),
-      ChipVariant.green  => (AppColors.green.withOpacity(0.12),  AppColors.green),
-      ChipVariant.orange => (AppColors.orange.withOpacity(0.12), AppColors.orange),
-      ChipVariant.red    => (AppColors.red.withOpacity(0.12),    AppColors.red),
-      ChipVariant.gray   => (
+      ChipVariant.blue => (AppColors.blue.withOpacity(0.12), AppColors.blue),
+      ChipVariant.green => (AppColors.green.withOpacity(0.12), AppColors.green),
+      ChipVariant.orange => (
+          AppColors.orange.withOpacity(0.12),
+          AppColors.orange
+        ),
+      ChipVariant.red => (AppColors.red.withOpacity(0.12), AppColors.red),
+      ChipVariant.gray => (
           const Color(0x1E767680),
           const Color(0xFF8E8E93),
         ),
@@ -353,9 +355,7 @@ class IosSegmentedControl<T> extends StatelessWidget {
                     opt.$2,
                     style: GoogleFonts.inter(
                       fontSize: 13,
-                      fontWeight: isActive
-                          ? FontWeight.w600
-                          : FontWeight.w500,
+                      fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                       color: isActive ? t.label : t.label2,
                     ),
                   ),
@@ -382,7 +382,7 @@ class IosSwitch extends StatelessWidget {
     return CupertinoSwitch(
       value: value,
       onChanged: onChanged,
-      activeColor: AppColors.green,
+      activeTrackColor: AppColors.green,
     );
   }
 }
@@ -396,7 +396,15 @@ class KmSlider extends StatelessWidget {
   static const double _min = 0.5;
   static const double _max = 50.0;
   static const List<double> _snaps = [
-    0.5, 1.0, 2.0, 5.0, 10.0, 15.0, 20.0, 30.0, 50.0,
+    0.5,
+    1.0,
+    2.0,
+    5.0,
+    10.0,
+    15.0,
+    20.0,
+    30.0,
+    50.0,
   ];
 
   const KmSlider({super.key, required this.value, required this.onChanged});
@@ -478,15 +486,14 @@ class KmSlider extends StatelessWidget {
                     ),
                     Text(
                       'Przeciągnij aby zmienić obszar',
-                      style: GoogleFonts.inter(
-                          fontSize: 12, color: t.label2),
+                      style: GoogleFonts.inter(fontSize: 12, color: t.label2),
                     ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppColors.blue,
                   borderRadius: BorderRadius.circular(99),
@@ -516,11 +523,9 @@ class KmSlider extends StatelessWidget {
               activeTrackColor: AppColors.blue,
               inactiveTrackColor: t.label4,
               thumbColor: Colors.white,
-              thumbShape: const RoundSliderThumbShape(
-                  enabledThumbRadius: 13),
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 13),
               overlayColor: AppColors.blue.withOpacity(0.15),
-              overlayShape: const RoundSliderOverlayShape(
-                  overlayRadius: 22),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 22),
               showValueIndicator: ShowValueIndicator.never,
             ),
             child: Slider(
@@ -552,13 +557,11 @@ class KmSlider extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 10, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: AppColors.green.withOpacity(0.08),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                  color: AppColors.green.withOpacity(0.15)),
+              border: Border.all(color: AppColors.green.withOpacity(0.15)),
             ),
             child: Row(
               children: [
@@ -572,8 +575,7 @@ class KmSlider extends StatelessWidget {
                 ),
                 Text(
                   'w promieniu ${_fmt(value)}',
-                  style: GoogleFonts.inter(
-                      fontSize: 11, color: t.label2),
+                  style: GoogleFonts.inter(fontSize: 11, color: t.label2),
                 ),
               ],
             ),
@@ -613,9 +615,8 @@ class GameCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: t.bg2,
         borderRadius: BorderRadius.circular(16),
-        border: isMatch
-            ? Border.all(color: AppColors.blue.withOpacity(0.3))
-            : null,
+        border:
+            isMatch ? Border.all(color: AppColors.blue.withOpacity(0.3)) : null,
         boxShadow: isMatch
             ? [
                 BoxShadow(
@@ -644,9 +645,7 @@ class GameCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SfIconBox(
-                  emoji: game.category == GameCategory.beach
-                      ? '🏖️'
-                      : '🏛️',
+                  emoji: game.category == GameCategory.beach ? '🏖️' : '🏛️',
                   bgColor: game.category == GameCategory.beach
                       ? AppColors.orange.withOpacity(0.12)
                       : AppColors.blue.withOpacity(0.12),
@@ -658,7 +657,7 @@ class GameCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (isMatch) ...[
-                        ChipBadge(
+                        const ChipBadge(
                           '✦ Pasuje do profilu',
                           variant: ChipVariant.blue,
                         ),
@@ -675,8 +674,7 @@ class GameCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         '📍 ${game.location}',
-                        style: GoogleFonts.inter(
-                            fontSize: 13, color: t.label2),
+                        style: GoogleFonts.inter(fontSize: 13, color: t.label2),
                       ),
                       const SizedBox(height: 8),
                       Wrap(
@@ -713,14 +711,12 @@ class GameCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       _dayLabel(game.dateTime),
-                      style: GoogleFonts.inter(
-                          fontSize: 12, color: t.label3),
+                      style: GoogleFonts.inter(fontSize: 12, color: t.label3),
                     ),
                   ],
                 ),
                 const SizedBox(width: 4),
-                Icon(CupertinoIcons.chevron_right,
-                    size: 14, color: t.label4),
+                Icon(CupertinoIcons.chevron_right, size: 14, color: t.label4),
               ],
             ),
           ),

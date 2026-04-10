@@ -1,16 +1,16 @@
 // ─── Domain enums ─────────────────────────────────────────────────────────────
- 
+
 enum PlayerLevel {
   beginner('Początkujący'),
   recreational('Rekreacyjny'),
   intermediate('Średni'),
   advanced('Zaawansowany'),
   competitive('Wyczynowy');
- 
+
   const PlayerLevel(this.label);
   final String label;
 }
- 
+
 enum PlayerPosition {
   outside('Przyjmujący'),
   setter('Rozgrywający'),
@@ -18,13 +18,13 @@ enum PlayerPosition {
   libero('Libero'),
   middle('Środkowy'),
   server('Zagrywający');
- 
+
   const PlayerPosition(this.label);
   final String label;
 }
- 
+
 enum GameCategory { indoor, beach }
- 
+
 enum MemberRole { coach, player, assistant }
 
 // ─── UserProfile ──────────────────────────────────────────────────────────────
@@ -281,24 +281,21 @@ class MockData {
       senderName: 'Marek K.',
       isMe: false,
       text: 'Hej, jest 7/8 osób na sobotę! 🎉',
-      timestamp: DateTime.now()
-          .subtract(const Duration(hours: 2, minutes: 38)),
+      timestamp: DateTime.now().subtract(const Duration(hours: 2, minutes: 38)),
     ),
     ChatMessage(
       id: '2',
       senderName: 'Anna W.',
       isMe: false,
       text: 'Super! Potwierdzam, będę o 10',
-      timestamp: DateTime.now()
-          .subtract(const Duration(hours: 2, minutes: 25)),
+      timestamp: DateTime.now().subtract(const Duration(hours: 2, minutes: 25)),
     ),
     ChatMessage(
       id: '3',
       senderName: 'Ty',
       isMe: true,
       text: 'Ja też! Biorę piłki',
-      timestamp: DateTime.now()
-          .subtract(const Duration(hours: 2, minutes: 23)),
+      timestamp: DateTime.now().subtract(const Duration(hours: 2, minutes: 23)),
     ),
     ChatMessage(
       id: '4',
@@ -313,16 +310,14 @@ class MockData {
       senderName: 'Ty',
       isMe: true,
       text: 'Dobra, propagujemy po grupach?',
-      timestamp: DateTime.now()
-          .subtract(const Duration(hours: 1, minutes: 57)),
+      timestamp: DateTime.now().subtract(const Duration(hours: 1, minutes: 57)),
     ),
     ChatMessage(
       id: '6',
       senderName: 'Anna W.',
       isMe: false,
       text: 'Już wrzuciłam na FB – ktoś powinien się zgłosić 💪',
-      timestamp: DateTime.now()
-          .subtract(const Duration(hours: 1, minutes: 54)),
+      timestamp: DateTime.now().subtract(const Duration(hours: 1, minutes: 54)),
     ),
   ];
 
