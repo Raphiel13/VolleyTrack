@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
@@ -24,6 +23,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late TextEditingController _bio;
   late PlayerLevel _level;
   late List<PlayerPosition> _positions;
+  late AppThemeMode _themeMode;
   bool _saved = false;
 
   bool _notifGames = true;
@@ -37,6 +37,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _bio = TextEditingController(text: widget.user.bio);
     _level = widget.user.level;
     _positions = List.from(widget.user.positions);
+    _themeMode = widget.user.themeMode;
   }
 
   @override
@@ -52,6 +53,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       bio: _bio.text.trim(),
       level: _level,
       positions: _positions,
+      themeMode: _themeMode,
     ));
     setState(() => _saved = true);
     Future.delayed(
@@ -119,8 +121,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: Text(
                           _name.text
                               .split(' ')
-                              .map((n) =>
-                                  n.isNotEmpty ? n[0] : '')
+                              .map((n) => n.isNotEmpty ? n[0] : '')
                               .take(2)
                               .join()
                               .toUpperCase(),
@@ -144,8 +145,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           border: Border.all(color: t.separator),
                           boxShadow: [
                             BoxShadow(
-                              color:
-                                  Colors.black.withOpacity(0.1),
+                              color: Colors.black.withOpacity(0.1),
                               blurRadius: 6,
                             ),
                           ],
@@ -160,9 +160,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  _name.text.isEmpty
-                      ? 'Twój profil'
-                      : _name.text,
+                  _name.text.isEmpty ? 'Twój profil' : _name.text,
                   style: GoogleFonts.inter(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
@@ -171,11 +169,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  _level.label,
-                  style: GoogleFonts.inter(
-                      fontSize: 15, color: t.label2),
-                ),
+                Text(_level.label,
+                    style: GoogleFonts.inter(
+                        fontSize: 15, color: t.label2)),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -194,20 +190,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           color: t.separator,
                         ),
                       Column(children: [
-                        Text(
-                          e.value[0],
-                          style: GoogleFonts.inter(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: t.label,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        Text(
-                          e.value[1],
-                          style: GoogleFonts.inter(
-                              fontSize: 13, color: t.label2),
-                        ),
+                        Text(e.value[0],
+                            style: GoogleFonts.inter(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              color: t.label,
+                              letterSpacing: -0.5,
+                            )),
+                        Text(e.value[1],
+                            style: GoogleFonts.inter(
+                                fontSize: 13, color: t.label2)),
                       ]),
                     ]);
                   }).toList(),
@@ -227,16 +219,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: IosCard(
                 child: Column(children: [
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                        16, 12, 16, 12),
+                    padding:
+                        const EdgeInsets.fromLTRB(16, 12, 16, 12),
                     child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Imię i nazwisko',
                             style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: t.label2)),
+                                fontSize: 12, color: t.label2)),
                         const SizedBox(height: 5),
                         TextField(
                           controller: _name,
@@ -255,16 +245,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   IosSeparator(indent: 16),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                        16, 12, 16, 12),
+                    padding:
+                        const EdgeInsets.fromLTRB(16, 12, 16, 12),
                     child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Bio',
                             style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: t.label2)),
+                                fontSize: 12, color: t.label2)),
                         const SizedBox(height: 5),
                         TextField(
                           controller: _bio,
@@ -276,8 +264,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             contentPadding: EdgeInsets.zero,
                             filled: false,
                             hintStyle: GoogleFonts.inter(
-                                color: t.label3,
-                                fontSize: 15),
+                                color: t.label3, fontSize: 15),
                           ),
                           style: GoogleFonts.inter(
                               fontSize: 15, color: t.label),
@@ -302,15 +289,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       mainAxisAlignment:
                           MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          _level.label,
-                          style: GoogleFonts.inter(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600,
-                            color:
-                                AppColors.levelColors[levelIdx],
-                          ),
-                        ),
+                        Text(_level.label,
+                            style: GoogleFonts.inter(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w600,
+                              color:
+                                  AppColors.levelColors[levelIdx],
+                            )),
                         Row(
                           children: List.generate(5, (i) {
                             return GestureDetector(
@@ -347,9 +332,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         overlayColor: AppColors
                             .levelColors[levelIdx]
                             .withOpacity(0.15),
-                        thumbShape:
-                            const RoundSliderThumbShape(
-                                enabledThumbRadius: 12),
+                        thumbShape: const RoundSliderThumbShape(
+                            enabledThumbRadius: 12),
                         showValueIndicator:
                             ShowValueIndicator.never,
                       ),
@@ -357,8 +341,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         value: levelIdx.toDouble(),
                         min: 0,
                         max: PlayerLevel.values.length - 1,
-                        divisions:
-                            PlayerLevel.values.length - 1,
+                        divisions: PlayerLevel.values.length - 1,
                         onChanged: (v) => setState(() =>
                             _level =
                                 PlayerLevel.values[v.round()]),
@@ -370,12 +353,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         Text('Początkujący',
                             style: GoogleFonts.inter(
-                                fontSize: 11,
-                                color: t.label3)),
+                                fontSize: 11, color: t.label3)),
                         Text('Wyczynowy',
                             style: GoogleFonts.inter(
-                                fontSize: 11,
-                                color: t.label3)),
+                                fontSize: 11, color: t.label3)),
                       ],
                     ),
                     const SizedBox(height: 10),
@@ -410,8 +391,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children:
-                          PlayerPosition.values.map((p) {
+                      children: PlayerPosition.values.map((p) {
                         final sel = _positions.contains(p);
                         return GestureDetector(
                           onTap: () => _togglePos(p),
@@ -432,16 +412,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     : t.separator,
                               ),
                             ),
-                            child: Text(
-                              p.label,
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: sel
-                                    ? Colors.white
-                                    : t.label,
-                              ),
-                            ),
+                            child: Text(p.label,
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: sel
+                                      ? Colors.white
+                                      : t.label,
+                                )),
                           ),
                         );
                       }).toList(),
@@ -454,6 +432,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ],
                 ),
+              ),
+            ),
+
+            // ── Theme picker ─────────────────────────────────────
+            SectionLabel('Wygląd'),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: IosCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(children: [
+                  Row(
+                    mainAxisAlignment:
+                        MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Tryb kolorów',
+                          style: GoogleFonts.inter(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: t.label,
+                          )),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  IosSegmentedControl<AppThemeMode>(
+                    options: const [
+                      (AppThemeMode.light, '☀️ Jasny'),
+                      (AppThemeMode.system, 'Systemowy'),
+                      (AppThemeMode.dark, '🌙 Ciemny'),
+                    ],
+                    selected: _themeMode,
+                    onChanged: (v) {
+                      setState(() => _themeMode = v);
+                      widget.onSave(
+                          widget.user.copyWith(themeMode: v));
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    switch (_themeMode) {
+                      AppThemeMode.system =>
+                          'Podąża za ustawieniami systemu',
+                      AppThemeMode.dark =>
+                          'Wymuszony tryb ciemny',
+                      AppThemeMode.light =>
+                          'Wymuszony tryb jasny',
+                    },
+                    style: GoogleFonts.inter(
+                        fontSize: 12, color: t.label3),
+                    textAlign: TextAlign.center,
+                  ),
+                ]),
               ),
             ),
 
@@ -530,8 +559,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ? AppColors.green
                           : AppColors.blue,
                     ),
-                    child: Text(
-                        _saved ? '✓ Zapisano!' : 'Zapisz profil'),
+                    child: Text(_saved
+                        ? '✓ Zapisano!'
+                        : 'Zapisz profil'),
                   ),
                 ),
               ),
@@ -555,13 +585,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         borderRadius:
                             BorderRadius.circular(14)),
                   ),
-                  child: Text(
-                    'Wyloguj się',
-                    style: GoogleFonts.inter(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                  child: Text('Wyloguj się',
+                      style: GoogleFonts.inter(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w500)),
                 ),
               ),
             ),
