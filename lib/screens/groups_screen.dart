@@ -3,7 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
 import '../widgets/ios_widgets.dart';
-import 'package:flutter/cupertino.dart';
+
+// ─── Groups Screen ────────────────────────────────────────────────────────────
 
 class GroupsScreen extends StatelessWidget {
   final void Function(Group) onOpenChat;
@@ -51,15 +52,12 @@ class GroupsScreen extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 8),
                         shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(10)),
+                            borderRadius: BorderRadius.circular(10)),
                       ),
                       child: Text(
                         '+ Nowa',
                         style: GoogleFonts.inter(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
+                            fontSize: 15, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),
@@ -72,28 +70,18 @@ class GroupsScreen extends StatelessWidget {
         SliverList(
           delegate: SliverChildListDelegate([
             const SizedBox(height: 16),
-
-            // ── Notification banner ──────────────────────────────
             _NotificationBanner(),
             const SizedBox(height: 4),
-
-            // ── Groups list ──────────────────────────────────────
             SectionLabel('Moje grupy'),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: IosCard(
                 child: Column(
-                  children: MockData.groups
-                      .asMap()
-                      .entries
-                      .map((e) {
+                  children: MockData.groups.asMap().entries.map((e) {
                     final g = e.value;
                     final i = e.key;
                     return Column(children: [
-                      _GroupRow(
-                        group: g,
-                        onTap: () => onOpenChat(g),
-                      ),
+                      _GroupRow(group: g, onTap: () => onOpenChat(g)),
                       if (i < MockData.groups.length - 1)
                         IosSeparator(indent: 16),
                     ]);
@@ -101,8 +89,6 @@ class GroupsScreen extends StatelessWidget {
                 ),
               ),
             ),
-
-            // ── Squad members ────────────────────────────────────
             SectionLabel('Ekipa Piątkowa – Skład'),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -113,17 +99,14 @@ class GroupsScreen extends StatelessWidget {
                     final isMe = name == 'Ty';
                     return Column(children: [
                       IosRow(
-                        leading:
-                            UserAvatar(name: name, size: 36),
+                        leading: UserAvatar(name: name, size: 36),
                         title: Row(children: [
-                          Text(
-                            name,
-                            style: GoogleFonts.inter(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                              color: t.label,
-                            ),
-                          ),
+                          Text(name,
+                              style: GoogleFonts.inter(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                color: t.label,
+                              )),
                           if (isAdmin) ...[
                             const SizedBox(width: 6),
                             ChipBadge('Admin',
@@ -131,19 +114,15 @@ class GroupsScreen extends StatelessWidget {
                           ],
                           if (isMe) ...[
                             const SizedBox(width: 6),
-                            ChipBadge('Ty',
-                                variant: ChipVariant.blue),
+                            ChipBadge('Ty', variant: ChipVariant.blue),
                           ],
                         ]),
-                        subtitle: Text(
-                          pos,
-                          style: GoogleFonts.inter(
-                              fontSize: 13, color: t.label2),
-                        ),
+                        subtitle: Text(pos,
+                            style: GoogleFonts.inter(
+                                fontSize: 13, color: t.label2)),
                         trailing: LevelDots(level: level),
                       ),
-                      if (e.key < _members.length - 1)
-                        IosSeparator(),
+                      if (e.key < _members.length - 1) IosSeparator(),
                     ]);
                   }).toList(),
                 ),
@@ -170,8 +149,7 @@ class _NotificationBanner extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.green.withOpacity(0.10),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-              color: AppColors.green.withOpacity(0.2)),
+          border: Border.all(color: AppColors.green.withOpacity(0.2)),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -182,20 +160,15 @@ class _NotificationBanner extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Ekipa Piątkowa',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: t.label,
-                    ),
-                  ),
+                  Text('Ekipa Piątkowa',
+                      style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: t.label)),
                   const SizedBox(height: 3),
-                  Text(
-                    'Admin otworzył zapisy na sobotę 10:00!',
-                    style: GoogleFonts.inter(
-                        fontSize: 13, color: t.label2),
-                  ),
+                  Text('Admin otworzył zapisy na sobotę 10:00!',
+                      style: GoogleFonts.inter(
+                          fontSize: 13, color: t.label2)),
                   const SizedBox(height: 10),
                   Row(children: [
                     _confirmBtn(context, '✓ Będę'),
@@ -216,21 +189,18 @@ class _NotificationBanner extends StatelessWidget {
     return GestureDetector(
       onTap: () {},
       child: Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: 14, vertical: 7),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: t.bg2,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: t.separator),
         ),
-        child: Text(
-          lbl,
-          style: GoogleFonts.inter(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: t.label,
-          ),
-        ),
+        child: Text(lbl,
+            style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: t.label)),
       ),
     );
   }
@@ -258,30 +228,21 @@ class _GroupRow extends StatelessWidget {
                 ? AppColors.green.withOpacity(0.12)
                 : AppColors.blue.withOpacity(0.12),
           ),
-          title: Text(
-            group.name,
-            style: GoogleFonts.inter(
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-              color: t.label,
-            ),
-          ),
+          title: Text(group.name,
+              style: GoogleFonts.inter(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: t.label)),
           subtitle: Row(children: [
+            Text('${group.members} członków · ',
+                style:
+                    GoogleFonts.inter(fontSize: 13, color: t.label2)),
             Text(
-              '${group.members} członków · ',
+              group.isOpen ? 'Zapisy otwarte' : group.nextGame ?? '',
               style: GoogleFonts.inter(
-                  fontSize: 13, color: t.label2),
-            ),
-            Text(
-              group.isOpen
-                  ? 'Zapisy otwarte'
-                  : group.nextGame ?? '',
-              style: GoogleFonts.inter(
-                fontSize: 13,
-                color: group.isOpen
-                    ? AppColors.green
-                    : t.label2,
-              ),
+                  fontSize: 13,
+                  color:
+                      group.isOpen ? AppColors.green : t.label2),
             ),
           ]),
         ),
@@ -298,14 +259,11 @@ class _GroupRow extends StatelessWidget {
                 border: Border.all(color: t.bg, width: 2),
               ),
               child: Center(
-                child: Text(
-                  '${group.unreadCount}',
-                  style: GoogleFonts.inter(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
+                child: Text('${group.unreadCount}',
+                    style: GoogleFonts.inter(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white)),
               ),
             ),
           ),
@@ -314,14 +272,10 @@ class _GroupRow extends StatelessWidget {
   }
 }
 
-// ── Chat Screen ───────────────────────────────────────────────────────────────
-// Append to groups_screen.dart after _GroupRow.
-// Add these imports at the top of the file if not present:
-//   import 'package:flutter/cupertino.dart';
+// ─── Chat Screen ──────────────────────────────────────────────────────────────
 
 class ChatScreen extends StatefulWidget {
   final Group group;
-
   const ChatScreen({super.key, required this.group});
 
   @override
@@ -381,56 +335,34 @@ class _ChatScreenState extends State<ChatScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: CupertinoButton(
-          padding: EdgeInsets.zero,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+          color: AppColors.blue,
           onPressed: () => Navigator.pop(context),
-          child: Row(children: [
-            Icon(CupertinoIcons.chevron_left,
-                color: AppColors.blue, size: 18),
-            Text(
-              'Grupy',
-              style: GoogleFonts.inter(
-                  fontSize: 17, color: AppColors.blue),
-            ),
-          ]),
         ),
-        leadingWidth: 90,
         title: Column(children: [
-          Text(
-            widget.group.name,
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: t.label,
-            ),
-          ),
-          Text(
-            '${widget.group.members} członków',
-            style: GoogleFonts.inter(
-                fontSize: 12, color: t.label2),
-          ),
+          Text(widget.group.name,
+              style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: t.label)),
+          Text('${widget.group.members} członków',
+              style:
+                  GoogleFonts.inter(fontSize: 12, color: t.label2)),
         ]),
         actions: isAdmin
             ? [
-                Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    onPressed: () {},
-                    child: Text(
-                      '🔓 Otwórz',
+                TextButton(
+                  onPressed: () {},
+                  child: Text('🔓 Otwórz',
                       style: GoogleFonts.inter(
-                          fontSize: 14,
-                          color: AppColors.blue),
-                    ),
-                  ),
+                          fontSize: 14, color: AppColors.blue)),
                 ),
               ]
             : null,
       ),
       body: Column(
         children: [
-          // Messages list
           Expanded(
             child: ListView.builder(
               controller: _scroll,
@@ -440,7 +372,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   _MessageBubble(msg: _messages[i]),
             ),
           ),
-          // Input bar
           Container(
             padding: EdgeInsets.only(
               left: 16,
@@ -453,15 +384,14 @@ class _ChatScreenState extends State<ChatScreen> {
             decoration: BoxDecoration(
               color: t.glassBg,
               border: Border(
-                  top: BorderSide(
-                      color: t.separator, width: 0.5)),
+                  top: BorderSide(color: t.separator, width: 0.5)),
             ),
             child: Row(children: [
               Expanded(
                 child: TextField(
                   controller: _ctrl,
-                  decoration: const InputDecoration(
-                      hintText: 'Wiadomość'),
+                  decoration:
+                      const InputDecoration(hintText: 'Wiadomość'),
                   onSubmitted: (_) => _send(),
                 ),
               ),
@@ -472,9 +402,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   width: 36,
                   height: 36,
                   decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.blue,
-                  ),
+                      shape: BoxShape.circle,
+                      color: AppColors.blue),
                   child: const Icon(Icons.arrow_upward,
                       color: Colors.white, size: 18),
                 ),
@@ -509,17 +438,14 @@ class _MessageBubble extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.green.withOpacity(0.10),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-              color: AppColors.green.withOpacity(0.2)),
+          border:
+              Border.all(color: AppColors.green.withOpacity(0.2)),
         ),
-        child: Text(
-          '📣 ${msg.text}',
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.green,
-          ),
-        ),
+        child: Text('📣 ${msg.text}',
+            style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.green)),
       );
     }
 
@@ -543,18 +469,14 @@ class _MessageBubble extends StatelessWidget {
               if (!msg.isMe)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 3),
-                  child: Text(
-                    msg.senderName,
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      color: t.label3,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                  child: Text(msg.senderName,
+                      style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: t.label3,
+                          fontWeight: FontWeight.w500)),
                 ),
               Container(
-                constraints:
-                    const BoxConstraints(maxWidth: 240),
+                constraints: const BoxConstraints(maxWidth: 240),
                 padding: const EdgeInsets.symmetric(
                     horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
@@ -562,40 +484,33 @@ class _MessageBubble extends StatelessWidget {
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(18),
                     topRight: const Radius.circular(18),
-                    bottomLeft: Radius.circular(
-                        msg.isMe ? 18 : 4),
-                    bottomRight: Radius.circular(
-                        msg.isMe ? 4 : 18),
+                    bottomLeft:
+                        Radius.circular(msg.isMe ? 18 : 4),
+                    bottomRight:
+                        Radius.circular(msg.isMe ? 4 : 18),
                   ),
                   boxShadow: msg.isMe
                       ? null
                       : [
                           BoxShadow(
-                            color:
-                                Colors.black.withOpacity(0.06),
+                            color: Colors.black.withOpacity(0.06),
                             blurRadius: 4,
                             offset: const Offset(0, 1),
                           ),
                         ],
                 ),
-                child: Text(
-                  msg.text,
-                  style: GoogleFonts.inter(
-                    fontSize: 15,
-                    color: msg.isMe
-                        ? Colors.white
-                        : t.label,
-                    height: 1.4,
-                  ),
-                ),
+                child: Text(msg.text,
+                    style: GoogleFonts.inter(
+                        fontSize: 15,
+                        color:
+                            msg.isMe ? Colors.white : t.label,
+                        height: 1.4)),
               ),
               Padding(
                 padding: const EdgeInsets.only(top: 3),
-                child: Text(
-                  _fmt(msg.timestamp),
-                  style: GoogleFonts.inter(
-                      fontSize: 11, color: t.label3),
-                ),
+                child: Text(_fmt(msg.timestamp),
+                    style: GoogleFonts.inter(
+                        fontSize: 11, color: t.label3)),
               ),
             ],
           ),
