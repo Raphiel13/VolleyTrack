@@ -6,10 +6,18 @@ import '../widgets/ios_widgets.dart';
 
 // ─── Groups Screen ────────────────────────────────────────────────────────────
 
-class GroupsScreen extends StatelessWidget {
+class GroupsScreen extends StatefulWidget {
   final void Function(Group) onOpenChat;
 
   const GroupsScreen({super.key, required this.onOpenChat});
+
+  @override
+  State<GroupsScreen> createState() => _GroupsScreenState();
+}
+
+class _GroupsScreenState extends State<GroupsScreen> {
+  bool _showBanner = true;
+  late List<Group> _groups;
 
   static const _members = [
     ('Marek K.', PlayerLevel.advanced, 'Atakujący', true),
@@ -17,6 +25,22 @@ class GroupsScreen extends StatelessWidget {
     ('Ty', PlayerLevel.advanced, 'Przyjmujący, Środkowy', false),
     ('Tomek B.', PlayerLevel.recreational, 'Zagrywający', false),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _groups = List.from(MockData.groups);
+  }
+
+  void _onConfirm(bool attending) {
+    setState(() {
+      _showBanner = false;
+      _groups[0] = _groups[0].copyWith(
+        unreadCount: 0,
+        nextGame: attending ? 'Sob, 10:00 · Będę ✓' : 'Sob, 10:00 · Nie mogę',
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,19 +93,21 @@ class GroupsScreen extends StatelessWidget {
         SliverList(
           delegate: SliverChildListDelegate([
             const SizedBox(height: 16),
-            _NotificationBanner(),
-            const SizedBox(height: 4),
+            if (_showBanner) ...[
+              _NotificationBanner(onConfirm: _onConfirm),
+              const SizedBox(height: 4),
+            ],
             const SectionLabel('Moje grupy'),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: IosCard(
                 child: Column(
-                  children: MockData.groups.asMap().entries.map((e) {
+                  children: _groups.asMap().entries.map((e) {
                     final g = e.value;
                     final i = e.key;
                     return Column(children: [
-                      _GroupRow(group: g, onTap: () => onOpenChat(g)),
-                      if (i < MockData.groups.length - 1)
+                      _GroupRow(group: g, onTap: () => widget.onOpenChat(g)),
+                      if (i < _groups.length - 1)
                         const IosSeparator(indent: 16),
                     ]);
                   }).toList(),
@@ -137,7 +163,19 @@ class GroupsScreen extends StatelessWidget {
 
 // ── Notification Banner ───────────────────────────────────────────────────────
 
-class _NotificationBanner extends StatelessWidget {
+class _NotificationBanner extends StatefulWidget {
+  final void Function(bool attending) onConfirm;
+
+  const _NotificationBanner({required this.onConfirm});
+
+  @override
+  State<_NotificationBanner> createState() => _NotificationBannerState();
+}
+
+class _NotificationBannerState extends State<_NotificationBanner> {
+  // null = no choice, true = attending, false = not attending
+  bool? _attending;
+
   @override
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
@@ -169,9 +207,9 @@ class _NotificationBanner extends StatelessWidget {
                       style: GoogleFonts.inter(fontSize: 13, color: t.label2)),
                   const SizedBox(height: 10),
                   Row(children: [
-                    _confirmBtn(context, '✓ Będę'),
+                    _confirmBtn(context, '✓ Będę', value: true),
                     const SizedBox(width: 8),
-                    _confirmBtn(context, '✗ Nie mogę'),
+                    _confirmBtn(context, '✗ Nie mogę', value: false),
                   ]),
                 ],
               ),
@@ -182,20 +220,30 @@ class _NotificationBanner extends StatelessWidget {
     );
   }
 
-  Widget _confirmBtn(BuildContext context, String lbl) {
+  Widget _confirmBtn(BuildContext context, String lbl, {required bool value}) {
     final t = AppTokens.of(context);
+    final isSelected = _attending == value;
+    final activeColor = value ? AppColors.green : AppColors.red;
     return GestureDetector(
-      onTap: () {},
+      onTap: () {
+        setState(() => _attending = value);
+        widget.onConfirm(value);
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: t.bg2,
+          color: isSelected ? activeColor.withValues(alpha: 0.15) : t.bg2,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: t.separator),
+          border: Border.all(
+            color: isSelected ? activeColor : t.separator,
+            width: isSelected ? 1.5 : 0.5,
+          ),
         ),
         child: Text(lbl,
             style: GoogleFonts.inter(
-                fontSize: 13, fontWeight: FontWeight.w500, color: t.label)),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: isSelected ? activeColor : t.label)),
       ),
     );
   }
