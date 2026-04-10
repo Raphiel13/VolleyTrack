@@ -122,6 +122,26 @@ class Group {
     this.unreadCount = 0,
     this.nextGame,
   });
+
+  Group copyWith({
+    String? name,
+    String? emoji,
+    int? members,
+    String? adminName,
+    bool? isOpen,
+    int? unreadCount,
+    String? nextGame,
+  }) =>
+      Group(
+        id: id,
+        name: name ?? this.name,
+        emoji: emoji ?? this.emoji,
+        members: members ?? this.members,
+        adminName: adminName ?? this.adminName,
+        isOpen: isOpen ?? this.isOpen,
+        unreadCount: unreadCount ?? this.unreadCount,
+        nextGame: nextGame ?? this.nextGame,
+      );
 }
 
 // ─── ChatMessage ──────────────────────────────────────────────────────────────
