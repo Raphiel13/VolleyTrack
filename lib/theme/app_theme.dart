@@ -112,6 +112,23 @@ class AppTokens {
 class AppTheme {
   AppTheme._();
 
+  static const _emojiFallback = <String>['Apple Color Emoji', 'Noto Color Emoji'];
+
+  static TextStyle _inter({
+    double? fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+    double? letterSpacing,
+    double? height,
+  }) =>
+      GoogleFonts.inter(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+        letterSpacing: letterSpacing,
+        height: height,
+      ).copyWith(fontFamilyFallback: _emojiFallback);
+
   static ThemeData build(Brightness brightness) {
     final t = brightness == Brightness.dark ? AppTokens.dark : AppTokens.light;
     final isDark = brightness == Brightness.dark;
@@ -137,7 +154,7 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: _inter(
           fontSize: 17,
           fontWeight: FontWeight.w600,
           color: t.label,
@@ -171,7 +188,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
-        hintStyle: GoogleFonts.inter(color: t.label3, fontSize: 17),
+        hintStyle: _inter(color: t.label3, fontSize: 17),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 14,
           vertical: 12,
@@ -186,7 +203,7 @@ class AppTheme {
             borderRadius: BorderRadius.circular(14),
           ),
           padding: const EdgeInsets.symmetric(vertical: 16),
-          textStyle: GoogleFonts.inter(
+          textStyle: _inter(
             fontSize: 17,
             fontWeight: FontWeight.w600,
           ),
@@ -198,11 +215,11 @@ class AppTheme {
         unselectedItemColor: t.label3,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
-        selectedLabelStyle: GoogleFonts.inter(
+        selectedLabelStyle: _inter(
           fontSize: 10,
           fontWeight: FontWeight.w600,
         ),
-        unselectedLabelStyle: GoogleFonts.inter(
+        unselectedLabelStyle: _inter(
           fontSize: 10,
           fontWeight: FontWeight.w500,
         ),
@@ -212,72 +229,72 @@ class AppTheme {
 
   static TextTheme _textTheme(Color label, Color label2) {
     return TextTheme(
-      displayLarge: GoogleFonts.inter(
+      displayLarge: _inter(
         fontSize: 34,
         fontWeight: FontWeight.w700,
         color: label,
         letterSpacing: -0.5,
       ),
-      displayMedium: GoogleFonts.inter(
+      displayMedium: _inter(
         fontSize: 28,
         fontWeight: FontWeight.w700,
         color: label,
         letterSpacing: -0.4,
       ),
-      headlineLarge: GoogleFonts.inter(
+      headlineLarge: _inter(
         fontSize: 22,
         fontWeight: FontWeight.w700,
         color: label,
         letterSpacing: -0.3,
       ),
-      headlineMedium: GoogleFonts.inter(
+      headlineMedium: _inter(
         fontSize: 20,
         fontWeight: FontWeight.w600,
         color: label,
         letterSpacing: -0.2,
       ),
-      headlineSmall: GoogleFonts.inter(
+      headlineSmall: _inter(
         fontSize: 17,
         fontWeight: FontWeight.w600,
         color: label,
         letterSpacing: -0.2,
       ),
-      titleLarge: GoogleFonts.inter(
+      titleLarge: _inter(
         fontSize: 17,
         fontWeight: FontWeight.w600,
         color: label,
       ),
-      titleMedium: GoogleFonts.inter(
+      titleMedium: _inter(
         fontSize: 16,
         fontWeight: FontWeight.w500,
         color: label,
       ),
-      titleSmall: GoogleFonts.inter(
+      titleSmall: _inter(
         fontSize: 15,
         fontWeight: FontWeight.w500,
         color: label,
       ),
-      bodyLarge: GoogleFonts.inter(
+      bodyLarge: _inter(
         fontSize: 17,
         fontWeight: FontWeight.w400,
         color: label,
       ),
-      bodyMedium: GoogleFonts.inter(
+      bodyMedium: _inter(
         fontSize: 15,
         fontWeight: FontWeight.w400,
         color: label,
       ),
-      bodySmall: GoogleFonts.inter(
+      bodySmall: _inter(
         fontSize: 13,
         fontWeight: FontWeight.w400,
         color: label2,
       ),
-      labelLarge: GoogleFonts.inter(
+      labelLarge: _inter(
         fontSize: 13,
         fontWeight: FontWeight.w600,
         color: label,
       ),
-      labelSmall: GoogleFonts.inter(
+      labelSmall: _inter(
         fontSize: 11,
         fontWeight: FontWeight.w500,
         color: label2,

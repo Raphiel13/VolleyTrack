@@ -158,7 +158,7 @@ class HomeScreen extends StatelessWidget {
               onAction: onGoGames,
             ),
             SizedBox(
-              height: 148,
+              height: 156,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -347,6 +347,8 @@ class _GroupTile extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     group.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
