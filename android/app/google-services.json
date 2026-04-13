@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "239125281431",
+    "project_id": "volley-manager-f3cff",
+    "storage_bucket": "volley-manager-f3cff.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:239125281431:android:4212787ceeb9da880407d2",
+        "android_client_info": {
+          "package_name": "com.rafal.volleymanager"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBSZ7JVbzq3rMtm60UrD2el6aBSGPHO8T4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:239125281431:android:02751eb980d96a840407d2",
+        "android_client_info": {
+          "package_name": "com.rafal.volleytrack"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBSZ7JVbzq3rMtm60UrD2el6aBSGPHO8T4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

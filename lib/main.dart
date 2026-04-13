@@ -2,8 +2,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'firebase_options.dart';
+import 'repositories/auth_repository.dart';
 import 'theme/app_theme.dart';
 import 'models/models.dart';
+import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/games_screen.dart';
 import 'screens/game_detail_sheet.dart';
@@ -11,14 +16,17 @@ import 'screens/stats_screen.dart';
 import 'screens/groups_screen.dart';
 import 'screens/profile_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarBrightness: Brightness.light,
     statusBarIconBrightness: Brightness.dark,
   ));
-  runApp(const VolleyManagerApp());
+  runApp(const ProviderScope(child: VolleyManagerApp()));
 }
 
 // ─── Root App ─────────────────────────────────────────────────────────────────
@@ -47,9 +55,51 @@ class _VolleyManagerAppState extends State<VolleyManagerApp> {
       themeMode: _themeMode,
       theme: AppTheme.build(Brightness.light),
       darkTheme: AppTheme.build(Brightness.dark),
-      home: MainShell(
+      home: _AuthGate(
         user: _user,
         onUserChanged: (u) => setState(() => _user = u),
+      ),
+    );
+  }
+}
+
+// ─── Auth Gate ────────────────────────────────────────────────────────────────
+
+class _AuthGate extends ConsumerWidget {
+  final UserProfile user;
+  final ValueChanged<UserProfile> onUserChanged;
+
+  const _AuthGate({required this.user, required this.onUserChanged});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authStateProvider);
+
+    return authState.when(
+      loading: () => const _SplashScreen(),
+      error: (_, __) => const LoginScreen(),
+      data: (firebaseUser) => firebaseUser == null
+          ? const LoginScreen()
+          : MainShell(user: user, onUserChanged: onUserChanged),
+    );
+  }
+}
+
+// ─── Splash Screen ────────────────────────────────────────────────────────────
+
+class _SplashScreen extends StatelessWidget {
+  const _SplashScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTokens.of(context);
+    return Scaffold(
+      backgroundColor: t.bg,
+      body: const Center(
+        child: CircularProgressIndicator(
+          color: AppColors.blue,
+          strokeWidth: 2.5,
+        ),
       ),
     );
   }
