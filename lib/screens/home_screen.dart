@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../repositories/game_repository.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
 import '../widgets/ios_widgets.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerWidget {
   final UserProfile user;
   final void Function(NearbyGame) onOpenGame;
   final void Function(Group) onOpenGroup;
@@ -19,8 +21,9 @@ class HomeScreen extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final t = AppTokens.of(context);
+    final gamesAsync = ref.watch(openGamesProvider);
 
     return CustomScrollView(
       slivers: [
@@ -86,68 +89,119 @@ class HomeScreen extends StatelessWidget {
               action: 'Zobacz wszystkie',
               onAction: onGoGames,
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: IosCard(
-                child: Column(
-                  children:
-                      MockData.games.take(3).toList().asMap().entries.map((e) {
-                    final g = e.value;
-                    final i = e.key;
-                    return Column(
-                      children: [
-                        IosRow(
-                          onTap: () => onOpenGame(g),
-                          leading: SfIconBox(
-                            emoji: g.category == GameCategory.beach
-                                ? '🏖️'
-                                : '🏛️',
-                            bgColor: g.category == GameCategory.beach
-                                ? AppColors.orange.withOpacity(0.12)
-                                : AppColors.blue.withOpacity(0.12),
-                          ),
-                          title: Text(
-                            g.title,
-                            style: GoogleFonts.inter(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: t.label,
-                            ),
-                          ),
-                          subtitle: Text(
-                            '${g.location} · ${g.distanceKm} km',
-                            style: GoogleFonts.inter(
-                                fontSize: 13, color: t.label2),
-                          ),
-                          trailing: Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                '${g.dateTime.hour.toString().padLeft(2, '0')}:'
-                                '${g.dateTime.minute.toString().padLeft(2, '0')}',
-                                style: GoogleFonts.inter(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: g.matchesUser(user)
-                                      ? AppColors.blue
-                                      : t.label2,
-                                ),
-                              ),
-                              Text(
-                                'Dziś',
-                                style: GoogleFonts.inter(
-                                    fontSize: 12, color: t.label3),
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (i < 2) const IosSeparator(),
-                      ],
-                    );
-                  }).toList(),
+            gamesAsync.when(
+              loading: () => const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: IosCard(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 28),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.blue,
+                        strokeWidth: 2.5,
+                      ),
+                    ),
+                  ),
                 ),
               ),
+              error: (_, __) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: IosCard(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Center(
+                      child: Text(
+                        'Nie udało się załadować gier',
+                        style: GoogleFonts.inter(
+                            fontSize: 14, color: t.label3),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              data: (games) {
+                final preview = games.take(3).toList();
+                if (preview.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: IosCard(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        child: Center(
+                          child: Text(
+                            'Brak gier w pobliżu',
+                            style: GoogleFonts.inter(
+                                fontSize: 14, color: t.label3),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: IosCard(
+                    child: Column(
+                      children: preview.asMap().entries.map((e) {
+                        final g = e.value;
+                        final i = e.key;
+                        return Column(
+                          children: [
+                            IosRow(
+                              onTap: () => onOpenGame(g),
+                              leading: SfIconBox(
+                                emoji: g.category == GameCategory.beach
+                                    ? '🏖️'
+                                    : '🏛️',
+                                bgColor: g.category == GameCategory.beach
+                                    ? AppColors.orange.withValues(alpha: 0.12)
+                                    : AppColors.blue.withValues(alpha: 0.12),
+                              ),
+                              title: Text(
+                                g.title,
+                                style: GoogleFonts.inter(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: t.label,
+                                ),
+                              ),
+                              subtitle: Text(
+                                '${g.location} · ${g.distanceKm} km',
+                                style: GoogleFonts.inter(
+                                    fontSize: 13, color: t.label2),
+                              ),
+                              trailing: Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '${g.dateTime.hour.toString().padLeft(2, '0')}:'
+                                    '${g.dateTime.minute.toString().padLeft(2, '0')}',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: g.matchesUser(user)
+                                          ? AppColors.blue
+                                          : t.label2,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Dziś',
+                                    style: GoogleFonts.inter(
+                                        fontSize: 12, color: t.label3),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (i < preview.length - 1)
+                              const IosSeparator(),
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 20),
 
