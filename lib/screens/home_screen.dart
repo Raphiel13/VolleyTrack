@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../repositories/auth_repository.dart';
 import '../repositories/game_repository.dart';
+import '../repositories/stats_repository.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
 import '../widgets/ios_widgets.dart';
@@ -24,6 +26,8 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = AppTokens.of(context);
     final gamesAsync = ref.watch(openGamesProvider);
+    final uid = ref.watch(authRepositoryProvider).currentUser?.uid ?? '';
+    final stats = ref.watch(statsProvider(uid)).valueOrNull ?? UserStats.empty;
 
     return CustomScrollView(
       slivers: [
@@ -76,7 +80,7 @@ class HomeScreen extends ConsumerWidget {
             const SizedBox(height: 16),
 
             // ── Hero banner ──────────────────────────────────────────────
-            _HeroBanner(user: user),
+            _HeroBanner(user: user, stats: stats),
             const SizedBox(height: 12),
 
             // ── Quick stats ──────────────────────────────────────────────
@@ -261,7 +265,8 @@ class HomeScreen extends ConsumerWidget {
 
 class _HeroBanner extends StatelessWidget {
   final UserProfile user;
-  const _HeroBanner({required this.user});
+  final UserStats stats;
+  const _HeroBanner({required this.user, required this.stats});
 
   @override
   Widget build(BuildContext context) {
@@ -299,11 +304,18 @@ class _HeroBanner extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              const Row(
+              Row(
                 children: [
-                  Expanded(child: _SeasonNum('24', 'Mecze')),
-                  Expanded(child: _SeasonNum('16', 'Wygrane')),
-                  Expanded(child: _SeasonNum('11.4', 'Pkt/mecz')),
+                  Expanded(child: _SeasonNum('${stats.totalGames}', 'Mecze')),
+                  Expanded(child: _SeasonNum('${stats.wins}', 'Wygrane')),
+                  Expanded(
+                    child: _SeasonNum(
+                      stats.avgPoints == 0
+                          ? '0'
+                          : stats.avgPoints.toStringAsFixed(1),
+                      'Pkt/mecz',
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 14),
