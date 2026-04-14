@@ -112,22 +112,32 @@ class AppTokens {
 class AppTheme {
   AppTheme._();
 
-  static const _emojiFallback = <String>['Apple Color Emoji', 'Noto Color Emoji'];
-
-  static TextStyle _inter({
+  static TextStyle inter({
+    TextStyle? textStyle,
     double? fontSize,
     FontWeight? fontWeight,
     Color? color,
     double? letterSpacing,
     double? height,
+    FontStyle? fontStyle,
+    TextDecoration? decoration,
+    Color? decorationColor,
+    TextDecorationStyle? decorationStyle,
+    double? decorationThickness,
   }) =>
       GoogleFonts.inter(
+        textStyle: textStyle,
         fontSize: fontSize,
         fontWeight: fontWeight,
         color: color,
         letterSpacing: letterSpacing,
         height: height,
-      ).copyWith(fontFamilyFallback: _emojiFallback);
+        fontStyle: fontStyle,
+        decoration: decoration,
+        decorationColor: decorationColor,
+        decorationStyle: decorationStyle,
+        decorationThickness: decorationThickness,
+      );
 
   static ThemeData build(Brightness brightness) {
     final t = brightness == Brightness.dark ? AppTokens.dark : AppTokens.light;
@@ -154,7 +164,7 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        titleTextStyle: _inter(
+        titleTextStyle: inter(
           fontSize: 17,
           fontWeight: FontWeight.w600,
           color: t.label,
@@ -188,7 +198,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
-        hintStyle: _inter(color: t.label3, fontSize: 17),
+        hintStyle: inter(color: t.label3, fontSize: 17),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 14,
           vertical: 12,
@@ -203,7 +213,7 @@ class AppTheme {
             borderRadius: BorderRadius.circular(14),
           ),
           padding: const EdgeInsets.symmetric(vertical: 16),
-          textStyle: _inter(
+          textStyle: inter(
             fontSize: 17,
             fontWeight: FontWeight.w600,
           ),
@@ -215,11 +225,11 @@ class AppTheme {
         unselectedItemColor: t.label3,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
-        selectedLabelStyle: _inter(
+        selectedLabelStyle: inter(
           fontSize: 10,
           fontWeight: FontWeight.w600,
         ),
-        unselectedLabelStyle: _inter(
+        unselectedLabelStyle: inter(
           fontSize: 10,
           fontWeight: FontWeight.w500,
         ),
@@ -229,72 +239,72 @@ class AppTheme {
 
   static TextTheme _textTheme(Color label, Color label2) {
     return TextTheme(
-      displayLarge: _inter(
+      displayLarge: inter(
         fontSize: 34,
         fontWeight: FontWeight.w700,
         color: label,
         letterSpacing: -0.5,
       ),
-      displayMedium: _inter(
+      displayMedium: inter(
         fontSize: 28,
         fontWeight: FontWeight.w700,
         color: label,
         letterSpacing: -0.4,
       ),
-      headlineLarge: _inter(
+      headlineLarge: inter(
         fontSize: 22,
         fontWeight: FontWeight.w700,
         color: label,
         letterSpacing: -0.3,
       ),
-      headlineMedium: _inter(
+      headlineMedium: inter(
         fontSize: 20,
         fontWeight: FontWeight.w600,
         color: label,
         letterSpacing: -0.2,
       ),
-      headlineSmall: _inter(
+      headlineSmall: inter(
         fontSize: 17,
         fontWeight: FontWeight.w600,
         color: label,
         letterSpacing: -0.2,
       ),
-      titleLarge: _inter(
+      titleLarge: inter(
         fontSize: 17,
         fontWeight: FontWeight.w600,
         color: label,
       ),
-      titleMedium: _inter(
+      titleMedium: inter(
         fontSize: 16,
         fontWeight: FontWeight.w500,
         color: label,
       ),
-      titleSmall: _inter(
+      titleSmall: inter(
         fontSize: 15,
         fontWeight: FontWeight.w500,
         color: label,
       ),
-      bodyLarge: _inter(
+      bodyLarge: inter(
         fontSize: 17,
         fontWeight: FontWeight.w400,
         color: label,
       ),
-      bodyMedium: _inter(
+      bodyMedium: inter(
         fontSize: 15,
         fontWeight: FontWeight.w400,
         color: label,
       ),
-      bodySmall: _inter(
+      bodySmall: inter(
         fontSize: 13,
         fontWeight: FontWeight.w400,
         color: label2,
       ),
-      labelLarge: _inter(
+      labelLarge: inter(
         fontSize: 13,
         fontWeight: FontWeight.w600,
         color: label,
       ),
-      labelSmall: _inter(
+      labelSmall: inter(
         fontSize: 11,
         fontWeight: FontWeight.w500,
         color: label2,

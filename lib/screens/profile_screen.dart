@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
 import '../widgets/ios_widgets.dart';
@@ -125,7 +124,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               .take(2)
                               .join()
                               .toUpperCase(),
-                          style: GoogleFonts.inter(
+                          style: AppTheme.inter(
                             fontSize: 32,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -160,7 +159,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 12),
                 Text(
                   _name.text.isEmpty ? 'Twój profil' : _name.text,
-                  style: GoogleFonts.inter(
+                  style: AppTheme.inter(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
                     color: t.label,
@@ -169,7 +168,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(_level.label,
-                    style: GoogleFonts.inter(fontSize: 15, color: t.label2)),
+                    style: AppTheme.inter(fontSize: 15, color: t.label2)),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -188,14 +187,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       Column(children: [
                         Text(e.value[0],
-                            style: GoogleFonts.inter(
+                            style: AppTheme.inter(
                               fontSize: 20,
                               fontWeight: FontWeight.w700,
                               color: t.label,
                               letterSpacing: -0.5,
                             )),
                         Text(e.value[1],
-                            style: GoogleFonts.inter(
+                            style: AppTheme.inter(
                                 fontSize: 13, color: t.label2)),
                       ]),
                     ]);
@@ -220,7 +219,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Imię i nazwisko',
-                            style: GoogleFonts.inter(
+                            style: AppTheme.inter(
                                 fontSize: 12, color: t.label2)),
                         const SizedBox(height: 5),
                         TextField(
@@ -233,7 +232,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             filled: false,
                           ),
                           style:
-                              GoogleFonts.inter(fontSize: 16, color: t.label),
+                              AppTheme.inter(fontSize: 16, color: t.label),
                         ),
                       ],
                     ),
@@ -245,7 +244,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Bio',
-                            style: GoogleFonts.inter(
+                            style: AppTheme.inter(
                                 fontSize: 12, color: t.label2)),
                         const SizedBox(height: 5),
                         TextField(
@@ -257,11 +256,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             isDense: true,
                             contentPadding: EdgeInsets.zero,
                             filled: false,
-                            hintStyle: GoogleFonts.inter(
+                            hintStyle: AppTheme.inter(
                                 color: t.label3, fontSize: 15),
                           ),
                           style:
-                              GoogleFonts.inter(fontSize: 15, color: t.label),
+                              AppTheme.inter(fontSize: 15, color: t.label),
                         ),
                       ],
                     ),
@@ -283,7 +282,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(_level.label,
-                            style: GoogleFonts.inter(
+                            style: AppTheme.inter(
                               fontSize: 17,
                               fontWeight: FontWeight.w600,
                               color: AppColors.levelColors[levelIdx],
@@ -335,10 +334,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('Początkujący',
-                            style: GoogleFonts.inter(
+                            style: AppTheme.inter(
                                 fontSize: 11, color: t.label3)),
                         Text('Wyczynowy',
-                            style: GoogleFonts.inter(
+                            style: AppTheme.inter(
                                 fontSize: 11, color: t.label3)),
                       ],
                     ),
@@ -351,7 +350,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       child: Text(
                         '💡 Wpływa na dopasowanie gier w wyszukiwarce',
-                        style: GoogleFonts.inter(
+                        style: AppTheme.inter(
                             fontSize: 12, color: AppColors.blue),
                       ),
                     ),
@@ -388,7 +387,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                             child: Text(p.label,
-                                style: GoogleFonts.inter(
+                                style: AppTheme.inter(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
                                   color: sel ? Colors.white : t.label,
@@ -400,7 +399,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 10),
                     Text(
                       'Wybrano: ${_positions.isEmpty ? "brak" : _positions.map((p) => p.label).join(", ")}',
-                      style: GoogleFonts.inter(fontSize: 13, color: t.label3),
+                      style: AppTheme.inter(fontSize: 13, color: t.label3),
                     ),
                   ],
                 ),
@@ -418,7 +417,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('Tryb kolorów',
-                          style: GoogleFonts.inter(
+                          style: AppTheme.inter(
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
                             color: t.label,
@@ -445,7 +444,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       AppThemeMode.dark => 'Wymuszony tryb ciemny',
                       AppThemeMode.light => 'Wymuszony tryb jasny',
                     },
-                    style: GoogleFonts.inter(fontSize: 12, color: t.label3),
+                    style: AppTheme.inter(fontSize: 12, color: t.label3),
                     textAlign: TextAlign.center,
                   ),
                 ]),
@@ -462,7 +461,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     leading: SfIconBox(
                         emoji: '📍', bgColor: AppColors.blue.withOpacity(0.12)),
                     title: Text('Nowe gry w okolicy',
-                        style: GoogleFonts.inter(fontSize: 16, color: t.label)),
+                        style: AppTheme.inter(fontSize: 16, color: t.label)),
                     showChevron: false,
                     trailing: IosSwitch(
                       value: _notifGames,
@@ -474,7 +473,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     leading: SfIconBox(
                         emoji: '👥', bgColor: AppColors.teal.withOpacity(0.12)),
                     title: Text('Zapisy grupowe',
-                        style: GoogleFonts.inter(fontSize: 16, color: t.label)),
+                        style: AppTheme.inter(fontSize: 16, color: t.label)),
                     showChevron: false,
                     trailing: IosSwitch(
                       value: _notifGroups,
@@ -487,7 +486,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         emoji: '📊',
                         bgColor: AppColors.orange.withOpacity(0.12)),
                     title: Text('Wyniki meczów',
-                        style: GoogleFonts.inter(fontSize: 16, color: t.label)),
+                        style: AppTheme.inter(fontSize: 16, color: t.label)),
                     showChevron: false,
                     trailing: IosSwitch(
                       value: _notifResults,
@@ -535,7 +534,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         borderRadius: BorderRadius.circular(14)),
                   ),
                   child: Text('Wyloguj się',
-                      style: GoogleFonts.inter(
+                      style: AppTheme.inter(
                           fontSize: 17, fontWeight: FontWeight.w500)),
                 ),
               ),

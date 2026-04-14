@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
 import '../widgets/ios_widgets.dart';
@@ -36,7 +35,7 @@ class _StatsScreenState extends State<StatsScreen> {
                     children: [
                       Text(
                         'Statystyki',
-                        style: GoogleFonts.inter(
+                        style: AppTheme.inter(
                           fontSize: 34,
                           fontWeight: FontWeight.w700,
                           color: t.label,
@@ -45,7 +44,7 @@ class _StatsScreenState extends State<StatsScreen> {
                       ),
                       Text(
                         'Sezon 2025',
-                        style: GoogleFonts.inter(fontSize: 15, color: t.label3),
+                        style: AppTheme.inter(fontSize: 15, color: t.label3),
                       ),
                     ],
                   ),
@@ -84,7 +83,7 @@ class _StatsScreenState extends State<StatsScreen> {
                             child: Column(children: [
                               Text(
                                 e.value[0],
-                                style: GoogleFonts.inter(
+                                style: AppTheme.inter(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w700,
                                   color: t.label,
@@ -94,7 +93,7 @@ class _StatsScreenState extends State<StatsScreen> {
                               const SizedBox(height: 3),
                               Text(
                                 e.value[1],
-                                style: GoogleFonts.inter(
+                                style: AppTheme.inter(
                                     fontSize: 11, color: t.label2),
                                 textAlign: TextAlign.center,
                               ),
@@ -120,7 +119,7 @@ class _StatsScreenState extends State<StatsScreen> {
                           children: [
                             Text(
                               '3 mecze w tym tygodniu',
-                              style: GoogleFonts.inter(
+                              style: AppTheme.inter(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
                                 color: t.label,
@@ -154,7 +153,7 @@ class _StatsScreenState extends State<StatsScreen> {
                                       padding: const EdgeInsets.only(top: 6),
                                       child: Text(
                                         _days[v.toInt()],
-                                        style: GoogleFonts.inter(
+                                        style: AppTheme.inter(
                                           fontSize: 11,
                                           color: t.label3,
                                           fontWeight: FontWeight.w500,
@@ -228,11 +227,11 @@ class _StatsScreenState extends State<StatsScreen> {
                               bgColor: t.label4.withOpacity(0.4),
                             ),
                             title: Text(label,
-                                style: GoogleFonts.inter(
+                                style: AppTheme.inter(
                                     fontSize: 16, color: t.label)),
                             trailing: Text(
                               val,
-                              style: GoogleFonts.inter(
+                              style: AppTheme.inter(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w700,
                                 color: color,
@@ -254,7 +253,7 @@ class _StatsScreenState extends State<StatsScreen> {
                     children: [
                       Text(
                         'HISTORIA MECZÓW',
-                        style: GoogleFonts.inter(
+                        style: AppTheme.inter(
                           fontSize: 13,
                           color: t.label2,
                           letterSpacing: 0.3,
@@ -272,7 +271,7 @@ class _StatsScreenState extends State<StatsScreen> {
                         ),
                         child: Text(
                           '+ Dodaj',
-                          style: GoogleFonts.inter(
+                          style: AppTheme.inter(
                               fontSize: 13, fontWeight: FontWeight.w600),
                         ),
                       ),
@@ -302,7 +301,7 @@ class _StatsScreenState extends State<StatsScreen> {
                               child: Center(
                                 child: Text(
                                   m.isWin ? 'W' : 'L',
-                                  style: GoogleFonts.inter(
+                                  style: AppTheme.inter(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
                                     color: m.isWin
@@ -314,7 +313,7 @@ class _StatsScreenState extends State<StatsScreen> {
                             ),
                             title: Text(
                               m.opponent,
-                              style: GoogleFonts.inter(
+                              style: AppTheme.inter(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w500,
                                 color: t.label,
@@ -322,12 +321,12 @@ class _StatsScreenState extends State<StatsScreen> {
                             ),
                             subtitle: Text(
                               '${m.date} · ${m.score}',
-                              style: GoogleFonts.inter(
+                              style: AppTheme.inter(
                                   fontSize: 13, color: t.label2),
                             ),
                             trailing: Text(
                               '${m.points} pkt',
-                              style: GoogleFonts.inter(
+                              style: AppTheme.inter(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w700,
                                 color: m.isWin ? AppColors.green : t.label2,
@@ -408,7 +407,7 @@ class _AddMatchSheetState extends State<_AddMatchSheet> {
                   ),
                   Text(
                     'Nowy mecz',
-                    style: GoogleFonts.inter(
+                    style: AppTheme.inter(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
                       color: t.label,
@@ -465,7 +464,7 @@ class _AddMatchSheetState extends State<_AddMatchSheet> {
         child: Center(
           child: Text(
             lbl,
-            style: GoogleFonts.inter(
+            style: AppTheme.inter(
               fontSize: 15,
               fontWeight: FontWeight.w500,
               color: active ? AppColors.blue : t.label,
