@@ -162,13 +162,15 @@ class SectionLabel extends StatelessWidget {
 // ─── SfIconBox ────────────────────────────────────────────────────────────────
 
 class SfIconBox extends StatelessWidget {
-  final String emoji;
+  final String? emoji;
+  final Widget? iconWidget;
   final Color bgColor;
   final double size;
 
   const SfIconBox({
     super.key,
-    required this.emoji,
+    this.emoji,
+    this.iconWidget,
     required this.bgColor,
     this.size = 32,
   });
@@ -183,7 +185,8 @@ class SfIconBox extends StatelessWidget {
         borderRadius: BorderRadius.circular(size * 0.25),
       ),
       child: Center(
-        child: Text(emoji, style: TextStyle(fontSize: size * 0.5)),
+        child: iconWidget ??
+            Text(emoji!, style: TextStyle(fontSize: size * 0.5)),
       ),
     );
   }
@@ -472,7 +475,7 @@ class KmSlider extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Text('📍', style: TextStyle(fontSize: 16)),
+              Icon(CupertinoIcons.location_fill, size: 18, color: t.label),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
@@ -647,7 +650,15 @@ class GameCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SfIconBox(
-                  emoji: game.category == GameCategory.beach ? '🏖️' : '🏛️',
+                  iconWidget: Icon(
+                    game.category == GameCategory.beach
+                        ? Icons.beach_access
+                        : Icons.sports_volleyball,
+                    size: 20,
+                    color: game.category == GameCategory.beach
+                        ? AppColors.orange
+                        : AppColors.blue,
+                  ),
                   bgColor: game.category == GameCategory.beach
                       ? AppColors.orange.withOpacity(0.12)
                       : AppColors.blue.withOpacity(0.12),

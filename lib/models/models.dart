@@ -139,7 +139,6 @@ class NearbyGame {
 class Group {
   final String id;
   final String name;
-  final String emoji;
   final int members;
   final String adminName;
   final bool isOpen;
@@ -149,7 +148,6 @@ class Group {
   const Group({
     required this.id,
     required this.name,
-    required this.emoji,
     required this.members,
     required this.adminName,
     this.isOpen = false,
@@ -159,7 +157,6 @@ class Group {
 
   Group copyWith({
     String? name,
-    String? emoji,
     int? members,
     String? adminName,
     bool? isOpen,
@@ -169,7 +166,6 @@ class Group {
       Group(
         id: id,
         name: name ?? this.name,
-        emoji: emoji ?? this.emoji,
         members: members ?? this.members,
         adminName: adminName ?? this.adminName,
         isOpen: isOpen ?? this.isOpen,
@@ -303,7 +299,6 @@ class MockData {
     const Group(
       id: '1',
       name: 'Ekipa Piątkowa',
-      emoji: '🏐',
       members: 8,
       adminName: 'Marek K.',
       unreadCount: 3,
@@ -312,7 +307,6 @@ class MockData {
     const Group(
       id: '2',
       name: 'OSiR Liga – Drużyna A',
-      emoji: '🏆',
       members: 12,
       adminName: 'Anna W.',
       isOpen: true,
@@ -321,7 +315,6 @@ class MockData {
     const Group(
       id: '3',
       name: 'Beach Summer 2025',
-      emoji: '🏖️',
       members: 6,
       adminName: 'Ty',
       unreadCount: 1,

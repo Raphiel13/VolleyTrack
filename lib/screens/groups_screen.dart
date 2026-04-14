@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
@@ -286,6 +287,26 @@ class _NotificationBannerState extends State<_NotificationBanner>
   }
 }
 
+// ── Group helpers ─────────────────────────────────────────────────────────────
+
+IconData _groupIcon(Group group) {
+  final n = group.name.toLowerCase();
+  if (n.contains('beach') || n.contains('plaż')) return Icons.beach_access;
+  if (n.contains('liga') || n.contains('turniej')) return Icons.emoji_events;
+  return CupertinoIcons.person_2_fill;
+}
+
+Color _groupColor(String id) {
+  const palette = <Color>[
+    AppColors.blue,
+    AppColors.teal,
+    AppColors.green,
+    AppColors.orange,
+    AppColors.purple,
+  ];
+  return palette[id.hashCode.abs() % palette.length];
+}
+
 // ── Group Row ─────────────────────────────────────────────────────────────────
 
 class _GroupRow extends StatelessWidget {
@@ -302,11 +323,15 @@ class _GroupRow extends StatelessWidget {
         IosRow(
           onTap: onTap,
           leading: SfIconBox(
-            emoji: group.emoji,
+            iconWidget: Icon(
+              _groupIcon(group),
+              size: 24,
+              color: _groupColor(group.id),
+            ),
             size: 44,
             bgColor: group.isOpen
-                ? AppColors.green.withOpacity(0.12)
-                : AppColors.blue.withOpacity(0.12),
+                ? AppColors.green.withValues(alpha: 0.12)
+                : _groupColor(group.id).withValues(alpha: 0.12),
           ),
           title: Text(group.name,
               style: AppTheme.inter(

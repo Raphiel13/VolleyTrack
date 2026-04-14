@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repositories/game_repository.dart';
@@ -44,14 +45,25 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    '${user.name.split(' ').first} 👋',
-                    style: AppTheme.inter(
-                      fontSize: 34,
-                      fontWeight: FontWeight.w700,
-                      color: t.label,
-                      letterSpacing: -0.5,
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        user.name.split(' ').first,
+                        style: AppTheme.inter(
+                          fontSize: 34,
+                          fontWeight: FontWeight.w700,
+                          color: t.label,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      const Icon(
+                        CupertinoIcons.hand_raised_fill,
+                        color: AppColors.blue,
+                        size: 28,
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -68,15 +80,23 @@ class HomeScreen extends ConsumerWidget {
             const SizedBox(height: 12),
 
             // ── Quick stats ──────────────────────────────────────────────
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  _QuickStat('🔥', '5 W', 'Seria'),
-                  SizedBox(width: 10),
-                  _QuickStat('⚡', '2.3', 'Asy/mecz'),
-                  SizedBox(width: 10),
-                  _QuickStat('📍', '1.2 km', 'Najbliższa'),
+                  _QuickStat(
+                    const Icon(Icons.local_fire_department,
+                        size: 20, color: AppColors.orange),
+                    '5 W', 'Seria'),
+                  const SizedBox(width: 10),
+                  _QuickStat(
+                    const Icon(Icons.bolt, size: 20, color: AppColors.blue),
+                    '2.3', 'Asy/mecz'),
+                  const SizedBox(width: 10),
+                  _QuickStat(
+                    const Icon(Icons.location_on,
+                        size: 20, color: AppColors.red),
+                    '1.2 km', 'Najbliższa'),
                 ],
               ),
             ),
@@ -149,9 +169,15 @@ class HomeScreen extends ConsumerWidget {
                             IosRow(
                               onTap: () => onOpenGame(g),
                               leading: SfIconBox(
-                                emoji: g.category == GameCategory.beach
-                                    ? '🏖️'
-                                    : '🏛️',
+                                iconWidget: Icon(
+                                  g.category == GameCategory.beach
+                                      ? Icons.beach_access
+                                      : Icons.sports_volleyball,
+                                  size: 17,
+                                  color: g.category == GameCategory.beach
+                                      ? AppColors.orange
+                                      : AppColors.blue,
+                                ),
                                 bgColor: g.category == GameCategory.beach
                                     ? AppColors.orange.withValues(alpha: 0.12)
                                     : AppColors.blue.withValues(alpha: 0.12),
@@ -257,7 +283,7 @@ class _HeroBanner extends StatelessWidget {
             right: -10,
             child: Opacity(
               opacity: 0.12,
-              child: Text('🏐', style: TextStyle(fontSize: 100)),
+              child: Icon(Icons.sports_volleyball, size: 100, color: Colors.white),
             ),
           ),
           Column(
@@ -339,8 +365,9 @@ class _SeasonNum extends StatelessWidget {
 // ── Quick Stat tile ───────────────────────────────────────────────────────────
 
 class _QuickStat extends StatelessWidget {
-  final String emoji, value, label;
-  const _QuickStat(this.emoji, this.value, this.label);
+  final Widget icon;
+  final String value, label;
+  const _QuickStat(this.icon, this.value, this.label);
 
   @override
   Widget build(BuildContext context) {
@@ -350,7 +377,7 @@ class _QuickStat extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
         child: Column(
           children: [
-            Text(emoji, style: const TextStyle(fontSize: 20)),
+            icon,
             const SizedBox(height: 5),
             Text(
               value,
@@ -372,6 +399,26 @@ class _QuickStat extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Group helpers ─────────────────────────────────────────────────────────────
+
+IconData _groupIcon(Group group) {
+  final n = group.name.toLowerCase();
+  if (n.contains('beach') || n.contains('plaż')) return Icons.beach_access;
+  if (n.contains('liga') || n.contains('turniej')) return Icons.emoji_events;
+  return CupertinoIcons.person_2_fill;
+}
+
+Color _groupColor(String id) {
+  const palette = <Color>[
+    AppColors.blue,
+    AppColors.teal,
+    AppColors.green,
+    AppColors.orange,
+    AppColors.purple,
+  ];
+  return palette[id.hashCode.abs() % palette.length];
 }
 
 // ── Group Tile ────────────────────────────────────────────────────────────────
@@ -396,7 +443,19 @@ class _GroupTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(group.emoji, style: const TextStyle(fontSize: 28)),
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: _groupColor(group.id).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      _groupIcon(group),
+                      size: 22,
+                      color: _groupColor(group.id),
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     group.name,
