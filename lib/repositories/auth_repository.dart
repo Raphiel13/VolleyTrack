@@ -1,9 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'user_repository.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return AuthRepository(FirebaseAuth.instance);
+  return AuthRepository(
+    FirebaseAuth.instance,
+    ref.watch(userRepositoryProvider),
+  );
 });
 
 final authStateProvider = StreamProvider<User?>((ref) {
@@ -12,7 +16,9 @@ final authStateProvider = StreamProvider<User?>((ref) {
 
 class AuthRepository {
   final FirebaseAuth _auth;
-  AuthRepository(this._auth);
+  final UserRepository _userRepo;
+
+  AuthRepository(this._auth, this._userRepo);
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
   User? get currentUser => _auth.currentUser;
@@ -30,7 +36,12 @@ class AuthRepository {
       email: email,
       password: password,
     );
-    await cred.user?.updateDisplayName(displayName);
+    final user = cred.user;
+    if (user == null) return;
+
+    // Set display name first so createUserProfile picks it up correctly.
+    await user.updateDisplayName(displayName);
+    await _userRepo.createUserProfile(user);
   }
 
   Future<void> signInWithGoogle() async {
