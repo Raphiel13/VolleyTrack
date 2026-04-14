@@ -77,9 +77,14 @@ class _AuthGate extends ConsumerWidget {
     return authState.when(
       loading: () => const _SplashScreen(),
       error: (_, __) => const LoginScreen(),
-      data: (firebaseUser) => firebaseUser == null
-          ? const LoginScreen()
-          : MainShell(user: user, onUserChanged: onUserChanged),
+      data: (firebaseUser) {
+        if (firebaseUser == null) return const LoginScreen();
+        final profile = UserProfile(
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName ?? 'Gracz',
+        );
+        return MainShell(user: profile, onUserChanged: onUserChanged);
+      },
     );
   }
 }
