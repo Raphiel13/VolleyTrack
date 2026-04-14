@@ -29,13 +29,25 @@ class GameRepository {
         .where('dateTime', isGreaterThan: Timestamp.now())
         .orderBy('dateTime')
         .snapshots()
-        .map((snap) => snap.docs.map(_fromDoc).toList());
+        .map((snap) => snap.docs.map(NearbyGame.fromFirestore).toList());
   }
 
   /// Adds a new game document. The id from Firestore is set on the returned game.
   Future<NearbyGame> createGame(NearbyGame game) async {
-    final doc = await _games.add(_toMap(game));
-    return game._withId(doc.id);
+    final doc = await _games.add(game.toFirestore());
+    return NearbyGame(
+      id: doc.id,
+      title: game.title,
+      location: game.location,
+      dateTime: game.dateTime,
+      level: game.level,
+      category: game.category,
+      spotsTotal: game.spotsTotal,
+      spotsTaken: game.spotsTaken,
+      distanceKm: game.distanceKm,
+      organizerName: game.organizerName,
+      organizerRating: game.organizerRating,
+    );
   }
 
   /// Adds [userId] to the game's playerIds list and increments spotsTaken.
@@ -82,39 +94,6 @@ class GameRepository {
     });
   }
 
-  // ─── Serialization ──────────────────────────────────────────────────────────
-
-  NearbyGame _fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final d = doc.data()!;
-    return NearbyGame(
-      id: doc.id,
-      title: d['title'] as String,
-      location: d['location'] as String,
-      dateTime: (d['dateTime'] as Timestamp).toDate(),
-      level: PlayerLevel.values.byName(d['level'] as String),
-      category: GameCategory.values.byName(d['category'] as String),
-      spotsTotal: d['spotsTotal'] as int,
-      spotsTaken: d['spotsTaken'] as int,
-      organizerName: d['organizerName'] as String? ?? '',
-      organizerRating: (d['organizerRating'] as num?)?.toDouble() ?? 0.0,
-      // distanceKm is not stored in Firestore — computed from geo elsewhere
-      distanceKm: 0.0,
-    );
-  }
-
-  Map<String, dynamic> _toMap(NearbyGame g) => {
-        'title': g.title,
-        'location': g.location,
-        'dateTime': Timestamp.fromDate(g.dateTime),
-        'level': g.level.name,
-        'category': g.category.name,
-        'spotsTotal': g.spotsTotal,
-        'spotsTaken': g.spotsTaken,
-        'organizerName': g.organizerName,
-        'organizerRating': g.organizerRating,
-        'isOpen': !g.isFull,
-        'playerIds': <String>[],
-      };
 }
 
 // ─── Exceptions ───────────────────────────────────────────────────────────────
@@ -135,20 +114,3 @@ class GameFullException implements Exception {
   String toString() => 'GameFullException: game $gameId has no spots left';
 }
 
-// ─── NearbyGame extension (internal) ─────────────────────────────────────────
-
-extension _NearbyGameX on NearbyGame {
-  NearbyGame _withId(String id) => NearbyGame(
-        id: id,
-        title: title,
-        location: location,
-        dateTime: dateTime,
-        level: level,
-        category: category,
-        spotsTotal: spotsTotal,
-        spotsTaken: spotsTaken,
-        distanceKm: distanceKm,
-        organizerName: organizerName,
-        organizerRating: organizerRating,
-      );
-}

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../repositories/game_repository.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
 import '../widgets/ios_widgets.dart';
@@ -7,22 +9,23 @@ import 'game_detail_sheet.dart';
 
 enum _ViewMode { list, map }
 
-class GamesScreen extends StatefulWidget {
+class GamesScreen extends ConsumerStatefulWidget {
   final UserProfile user;
   const GamesScreen({super.key, required this.user});
 
   @override
-  State<GamesScreen> createState() => _GamesScreenState();
+  ConsumerState<GamesScreen> createState() => _GamesScreenState();
 }
 
-class _GamesScreenState extends State<GamesScreen> {
+class _GamesScreenState extends ConsumerState<GamesScreen> {
   _ViewMode _view = _ViewMode.list;
   String _search = '';
   PlayerLevel? _filterLevel;
   GameCategory? _filterCat;
   double _radius = 10.0;
 
-  List<NearbyGame> get _filtered => MockData.games.where((g) {
+  List<NearbyGame> _applyFilters(List<NearbyGame> games) =>
+      games.where((g) {
         final ms = _search.isEmpty ||
             g.title.toLowerCase().contains(_search.toLowerCase()) ||
             g.location.toLowerCase().contains(_search.toLowerCase());
@@ -44,6 +47,7 @@ class _GamesScreenState extends State<GamesScreen> {
   @override
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
+    final gamesAsync = ref.watch(openGamesProvider);
 
     return CustomScrollView(
       slivers: [
@@ -86,27 +90,107 @@ class _GamesScreenState extends State<GamesScreen> {
             ),
           ),
         ),
-        if (_view == _ViewMode.list)
-          SliverToBoxAdapter(
-            child: _ListView(
-              games: _filtered,
-              user: widget.user,
-              radius: _radius,
-              onOpen: _openGame,
-            ),
-          )
-        else
-          SliverToBoxAdapter(
-            child: _MapView(
-              allGames: MockData.games,
-              filteredGames: _filtered,
-              user: widget.user,
-              radius: _radius,
-              onOpen: _openGame,
+        gamesAsync.when(
+          loading: () => const SliverToBoxAdapter(
+            child: _LoadingView(),
+          ),
+          error: (error, _) => SliverToBoxAdapter(
+            child: _ErrorView(
+              onRetry: () => ref.invalidate(openGamesProvider),
             ),
           ),
+          data: (games) {
+            final filtered = _applyFilters(games);
+            if (_view == _ViewMode.list) {
+              return SliverToBoxAdapter(
+                child: _ListView(
+                  games: filtered,
+                  user: widget.user,
+                  radius: _radius,
+                  onOpen: _openGame,
+                ),
+              );
+            } else {
+              return SliverToBoxAdapter(
+                child: _MapView(
+                  allGames: games,
+                  filteredGames: filtered,
+                  user: widget.user,
+                  radius: _radius,
+                  onOpen: _openGame,
+                ),
+              );
+            }
+          },
+        ),
         const SliverToBoxAdapter(child: SizedBox(height: 32)),
       ],
+    );
+  }
+}
+
+// ── Loading View ──────────────────────────────────────────────────────────────
+
+class _LoadingView extends StatelessWidget {
+  const _LoadingView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 80),
+      child: Center(
+        child: CircularProgressIndicator(
+          color: AppColors.blue,
+          strokeWidth: 2.5,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Error View ────────────────────────────────────────────────────────────────
+
+class _ErrorView extends StatelessWidget {
+  final VoidCallback onRetry;
+  const _ErrorView({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTokens.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 32),
+      child: Column(
+        children: [
+          const Text('⚠️', style: TextStyle(fontSize: 48)),
+          const SizedBox(height: 12),
+          Text(
+            'Nie udało się pobrać gier',
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: t.label,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Sprawdź połączenie i spróbuj ponownie',
+            style: GoogleFonts.inter(fontSize: 14, color: t.label3),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          TextButton(
+            onPressed: onRetry,
+            child: Text(
+              'Spróbuj ponownie',
+              style: GoogleFonts.inter(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppColors.blue,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
