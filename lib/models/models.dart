@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 // ─── Domain enums ─────────────────────────────────────────────────────────────
 
 enum PlayerLevel {
@@ -98,6 +100,38 @@ class NearbyGame {
   bool get isFull => spotsLeft <= 0;
 
   bool matchesUser(UserProfile user) => level == user.level;
+
+  factory NearbyGame.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final d = doc.data()!;
+    return NearbyGame(
+      id: doc.id,
+      title: d['title'] as String,
+      location: d['location'] as String,
+      dateTime: (d['dateTime'] as Timestamp).toDate(),
+      level: PlayerLevel.values.byName(d['level'] as String),
+      category: GameCategory.values.byName(d['category'] as String),
+      spotsTotal: d['spotsTotal'] as int,
+      spotsTaken: d['spotsTaken'] as int,
+      organizerName: d['organizerName'] as String? ?? '',
+      organizerRating: (d['organizerRating'] as num?)?.toDouble() ?? 0.0,
+      // distanceKm is computed from device location, not stored in Firestore
+      distanceKm: 0.0,
+    );
+  }
+
+  Map<String, dynamic> toFirestore() => {
+        'title': title,
+        'location': location,
+        'dateTime': Timestamp.fromDate(dateTime),
+        'level': level.name,
+        'category': category.name,
+        'spotsTotal': spotsTotal,
+        'spotsTaken': spotsTaken,
+        'organizerName': organizerName,
+        'organizerRating': organizerRating,
+        'isOpen': !isFull,
+        'playerIds': <String>[],
+      };
 }
 
 // ─── Group ────────────────────────────────────────────────────────────────────
