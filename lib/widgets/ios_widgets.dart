@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
 
@@ -131,13 +130,16 @@ class SectionLabel extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            text.toUpperCase(),
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              fontWeight: FontWeight.w400,
-              color: t.label2,
-              letterSpacing: 0.3,
+          Flexible(
+            child: Text(
+              text.toUpperCase(),
+              style: AppTheme.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+                color: t.label2,
+                letterSpacing: 0.3,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           if (action != null)
@@ -145,7 +147,7 @@ class SectionLabel extends StatelessWidget {
               onTap: onAction,
               child: Text(
                 action!,
-                style: GoogleFonts.inter(
+                style: AppTheme.inter(
                   fontSize: 15,
                   color: AppColors.blue,
                 ),
@@ -219,7 +221,7 @@ class UserAvatar extends StatelessWidget {
       child: Center(
         child: Text(
           _initials,
-          style: GoogleFonts.inter(
+          style: AppTheme.inter(
             fontSize: size * 0.36,
             fontWeight: FontWeight.w700,
             color: Colors.white,
@@ -264,7 +266,7 @@ class ChipBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.inter(
+        style: AppTheme.inter(
           fontSize: 12,
           fontWeight: FontWeight.w600,
           color: fg,
@@ -353,7 +355,7 @@ class IosSegmentedControl<T> extends StatelessWidget {
                 child: Center(
                   child: Text(
                     opt.$2,
-                    style: GoogleFonts.inter(
+                    style: AppTheme.inter(
                       fontSize: 13,
                       fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                       color: isActive ? t.label : t.label2,
@@ -478,7 +480,7 @@ class KmSlider extends StatelessWidget {
                   children: [
                     Text(
                       'Zasięg wyszukiwania',
-                      style: GoogleFonts.inter(
+                      style: AppTheme.inter(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: t.label,
@@ -486,7 +488,7 @@ class KmSlider extends StatelessWidget {
                     ),
                     Text(
                       'Przeciągnij aby zmienić obszar',
-                      style: GoogleFonts.inter(fontSize: 12, color: t.label2),
+                      style: AppTheme.inter(fontSize: 12, color: t.label2),
                     ),
                   ],
                 ),
@@ -507,7 +509,7 @@ class KmSlider extends StatelessWidget {
                 ),
                 child: Text(
                   _fmt(value),
-                  style: GoogleFonts.inter(
+                  style: AppTheme.inter(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -546,7 +548,7 @@ class KmSlider extends StatelessWidget {
                 onTap: () => onChanged(e.value),
                 child: Text(
                   lbl,
-                  style: GoogleFonts.inter(
+                  style: AppTheme.inter(
                     fontSize: 10,
                     fontWeight: FontWeight.w500,
                     color: isActive ? AppColors.blue : t.label3,
@@ -567,7 +569,7 @@ class KmSlider extends StatelessWidget {
               children: [
                 Text(
                   '$count gier ',
-                  style: GoogleFonts.inter(
+                  style: AppTheme.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: AppColors.green,
@@ -575,7 +577,7 @@ class KmSlider extends StatelessWidget {
                 ),
                 Text(
                   'w promieniu ${_fmt(value)}',
-                  style: GoogleFonts.inter(fontSize: 11, color: t.label2),
+                  style: AppTheme.inter(fontSize: 11, color: t.label2),
                 ),
               ],
             ),
@@ -665,7 +667,7 @@ class GameCard extends StatelessWidget {
                       ],
                       Text(
                         game.title,
-                        style: GoogleFonts.inter(
+                        style: AppTheme.inter(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                           color: t.label,
@@ -674,7 +676,7 @@ class GameCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         '📍 ${game.location}',
-                        style: GoogleFonts.inter(fontSize: 13, color: t.label2),
+                        style: AppTheme.inter(fontSize: 13, color: t.label2),
                       ),
                       const SizedBox(height: 8),
                       Wrap(
@@ -702,7 +704,7 @@ class GameCard extends StatelessWidget {
                     Text(
                       '${game.dateTime.hour.toString().padLeft(2, '0')}:'
                       '${game.dateTime.minute.toString().padLeft(2, '0')}',
-                      style: GoogleFonts.inter(
+                      style: AppTheme.inter(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: AppColors.blue,
@@ -711,7 +713,7 @@ class GameCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       _dayLabel(game.dateTime),
-                      style: GoogleFonts.inter(fontSize: 12, color: t.label3),
+                      style: AppTheme.inter(fontSize: 12, color: t.label3),
                     ),
                   ],
                 ),

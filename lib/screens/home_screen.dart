@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../repositories/game_repository.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
@@ -38,7 +37,7 @@ class HomeScreen extends ConsumerWidget {
                 children: [
                   Text(
                     'Witaj z powrotem',
-                    style: GoogleFonts.inter(
+                    style: AppTheme.inter(
                       fontSize: 13,
                       color: t.label2,
                       fontWeight: FontWeight.w500,
@@ -47,7 +46,7 @@ class HomeScreen extends ConsumerWidget {
                   const SizedBox(height: 2),
                   Text(
                     '${user.name.split(' ').first} 👋',
-                    style: GoogleFonts.inter(
+                    style: AppTheme.inter(
                       fontSize: 34,
                       fontWeight: FontWeight.w700,
                       color: t.label,
@@ -112,7 +111,7 @@ class HomeScreen extends ConsumerWidget {
                     child: Center(
                       child: Text(
                         'Nie udało się załadować gier',
-                        style: GoogleFonts.inter(
+                        style: AppTheme.inter(
                             fontSize: 14, color: t.label3),
                       ),
                     ),
@@ -130,7 +129,7 @@ class HomeScreen extends ConsumerWidget {
                         child: Center(
                           child: Text(
                             'Brak gier w pobliżu',
-                            style: GoogleFonts.inter(
+                            style: AppTheme.inter(
                                 fontSize: 14, color: t.label3),
                           ),
                         ),
@@ -159,7 +158,7 @@ class HomeScreen extends ConsumerWidget {
                               ),
                               title: Text(
                                 g.title,
-                                style: GoogleFonts.inter(
+                                style: AppTheme.inter(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
                                   color: t.label,
@@ -167,7 +166,7 @@ class HomeScreen extends ConsumerWidget {
                               ),
                               subtitle: Text(
                                 '${g.location} · ${g.distanceKm} km',
-                                style: GoogleFonts.inter(
+                                style: AppTheme.inter(
                                     fontSize: 13, color: t.label2),
                               ),
                               trailing: Column(
@@ -177,7 +176,7 @@ class HomeScreen extends ConsumerWidget {
                                   Text(
                                     '${g.dateTime.hour.toString().padLeft(2, '0')}:'
                                     '${g.dateTime.minute.toString().padLeft(2, '0')}',
-                                    style: GoogleFonts.inter(
+                                    style: AppTheme.inter(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
                                       color: g.matchesUser(user)
@@ -187,7 +186,7 @@ class HomeScreen extends ConsumerWidget {
                                   ),
                                   Text(
                                     'Dziś',
-                                    style: GoogleFonts.inter(
+                                    style: AppTheme.inter(
                                         fontSize: 12, color: t.label3),
                                   ),
                                 ],
@@ -266,7 +265,7 @@ class _HeroBanner extends StatelessWidget {
             children: [
               Text(
                 'SEZON 2025',
-                style: GoogleFonts.inter(
+                style: AppTheme.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: Colors.white70,
@@ -276,11 +275,9 @@ class _HeroBanner extends StatelessWidget {
               const SizedBox(height: 12),
               const Row(
                 children: [
-                  _SeasonNum('24', 'Mecze'),
-                  SizedBox(width: 28),
-                  _SeasonNum('16', 'Wygrane'),
-                  SizedBox(width: 28),
-                  _SeasonNum('11.4', 'Pkt/mecz'),
+                  Expanded(child: _SeasonNum('24', 'Mecze')),
+                  Expanded(child: _SeasonNum('16', 'Wygrane')),
+                  Expanded(child: _SeasonNum('11.4', 'Pkt/mecz')),
                 ],
               ),
               const SizedBox(height: 14),
@@ -288,18 +285,20 @@ class _HeroBanner extends StatelessWidget {
                 children: [
                   LevelDots(level: user.level),
                   const SizedBox(width: 8),
-                  Text(
-                    user.level.label,
-                    style:
-                        GoogleFonts.inter(fontSize: 13, color: Colors.white70),
+                  Flexible(
+                    child: Text(
+                      user.level.label,
+                      style: AppTheme.inter(fontSize: 13, color: Colors.white70),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   const SizedBox(width: 8),
-                  Text('·', style: GoogleFonts.inter(color: Colors.white38)),
+                  Text('·', style: AppTheme.inter(color: Colors.white38)),
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(
                       user.positions.map((p) => p.label).join(', '),
-                      style: GoogleFonts.inter(
+                      style: AppTheme.inter(
                           fontSize: 13, color: Colors.white70),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -324,7 +323,7 @@ class _SeasonNum extends StatelessWidget {
         children: [
           Text(
             value,
-            style: GoogleFonts.inter(
+            style: AppTheme.inter(
               fontSize: 26,
               fontWeight: FontWeight.w700,
               color: Colors.white,
@@ -332,7 +331,7 @@ class _SeasonNum extends StatelessWidget {
             ),
           ),
           Text(label,
-              style: GoogleFonts.inter(fontSize: 12, color: Colors.white70)),
+              style: AppTheme.inter(fontSize: 12, color: Colors.white70)),
         ],
       );
 }
@@ -355,7 +354,7 @@ class _QuickStat extends StatelessWidget {
             const SizedBox(height: 5),
             Text(
               value,
-              style: GoogleFonts.inter(
+              style: AppTheme.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: t.label,
@@ -365,7 +364,7 @@ class _QuickStat extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               label,
-              style: GoogleFonts.inter(fontSize: 11, color: t.label2),
+              style: AppTheme.inter(fontSize: 11, color: t.label2),
               textAlign: TextAlign.center,
             ),
           ],
@@ -403,7 +402,7 @@ class _GroupTile extends StatelessWidget {
                     group.name,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
+                    style: AppTheme.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: t.label,
@@ -412,12 +411,12 @@ class _GroupTile extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     '${group.members} członków',
-                    style: GoogleFonts.inter(fontSize: 12, color: t.label3),
+                    style: AppTheme.inter(fontSize: 12, color: t.label3),
                   ),
                   const Spacer(),
                   Text(
                     group.isOpen ? '🔓 Zapisy otwarte' : '⏰ ${group.nextGame}',
-                    style: GoogleFonts.inter(
+                    style: AppTheme.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: group.isOpen ? AppColors.green : t.label3,
@@ -441,7 +440,7 @@ class _GroupTile extends StatelessWidget {
                   child: Center(
                     child: Text(
                       '${group.unreadCount}',
-                      style: GoogleFonts.inter(
+                      style: AppTheme.inter(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,

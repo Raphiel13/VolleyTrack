@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../repositories/auth_repository.dart';
 import '../theme/app_theme.dart';
 
@@ -149,7 +148,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   Center(
                     child: Text(
                       'VolleyManager',
-                      style: GoogleFonts.inter(
+                      style: AppTheme.inter(
                         fontSize: 28,
                         fontWeight: FontWeight.w700,
                         color: t.label,
@@ -161,7 +160,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   Center(
                     child: Text(
                       _isLogin ? 'Zaloguj się, aby kontynuować' : 'Utwórz nowe konto',
-                      style: GoogleFonts.inter(fontSize: 15, color: t.label2),
+                      style: AppTheme.inter(fontSize: 15, color: t.label2),
                     ),
                   ),
                   const SizedBox(height: 36),
@@ -224,7 +223,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       ),
                       child: Text(
                         _error!,
-                        style: GoogleFonts.inter(fontSize: 13, color: AppColors.red),
+                        style: AppTheme.inter(fontSize: 13, color: AppColors.red),
                       ),
                     ),
                   ],
@@ -257,7 +256,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Text('lub',
-                          style: GoogleFonts.inter(fontSize: 13, color: t.label3)),
+                          style: AppTheme.inter(fontSize: 13, color: t.label3)),
                     ),
                     Expanded(child: Divider(color: t.separator)),
                   ]),
@@ -284,7 +283,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           const SizedBox(width: 10),
                           Text(
                             'Kontynuuj z Google',
-                            style: GoogleFonts.inter(
+                            style: AppTheme.inter(
                               fontSize: 15,
                               fontWeight: FontWeight.w500,
                               color: t.label,
@@ -303,13 +302,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     children: [
                       Text(
                         _isLogin ? 'Nie masz konta? ' : 'Masz już konto? ',
-                        style: GoogleFonts.inter(fontSize: 14, color: t.label2),
+                        style: AppTheme.inter(fontSize: 14, color: t.label2),
                       ),
                       GestureDetector(
                         onTap: _loading ? null : _switchMode,
                         child: Text(
                           _isLogin ? 'Zarejestruj się' : 'Zaloguj się',
-                          style: GoogleFonts.inter(
+                          style: AppTheme.inter(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: AppColors.blue,
@@ -358,7 +357,7 @@ class _Field extends StatelessWidget {
       obscureText: obscure,
       keyboardType: keyboardType,
       validator: validator,
-      style: GoogleFonts.inter(fontSize: 16, color: t.label),
+      style: AppTheme.inter(fontSize: 16, color: t.label),
       decoration: InputDecoration(
         hintText: hint,
         prefixIcon: Icon(icon, size: 20, color: t.label3),

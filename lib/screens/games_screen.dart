@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../repositories/game_repository.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
@@ -58,7 +57,7 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
               child: Text(
                 'Znajdź grę',
-                style: GoogleFonts.inter(
+                style: AppTheme.inter(
                   fontSize: 34,
                   fontWeight: FontWeight.w700,
                   color: t.label,
@@ -165,7 +164,7 @@ class _ErrorView extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             'Nie udało się pobrać gier',
-            style: GoogleFonts.inter(
+            style: AppTheme.inter(
               fontSize: 16,
               fontWeight: FontWeight.w600,
               color: t.label,
@@ -174,7 +173,7 @@ class _ErrorView extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             'Sprawdź połączenie i spróbuj ponownie',
-            style: GoogleFonts.inter(fontSize: 14, color: t.label3),
+            style: AppTheme.inter(fontSize: 14, color: t.label3),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),
@@ -182,7 +181,7 @@ class _ErrorView extends StatelessWidget {
             onPressed: onRetry,
             child: Text(
               'Spróbuj ponownie',
-              style: GoogleFonts.inter(
+              style: AppTheme.inter(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
                 color: AppColors.blue,
@@ -253,12 +252,12 @@ class _FilterHeader extends SliverPersistentHeaderDelegate {
                       hintText: 'Szukaj gier, lokalizacji…',
                       border: InputBorder.none,
                       hintStyle:
-                          GoogleFonts.inter(fontSize: 17, color: t.label3),
+                          AppTheme.inter(fontSize: 17, color: t.label3),
                       isDense: true,
                       contentPadding: EdgeInsets.zero,
                       filled: false,
                     ),
-                    style: GoogleFonts.inter(fontSize: 17, color: t.label),
+                    style: AppTheme.inter(fontSize: 17, color: t.label),
                   ),
                 ),
               ],
@@ -340,7 +339,7 @@ class _FilterHeader extends SliverPersistentHeaderDelegate {
         ),
         child: Text(
           lbl,
-          style: GoogleFonts.inter(
+          style: AppTheme.inter(
             fontSize: 13,
             fontWeight: FontWeight.w500,
             color: active ? Colors.white : t.label,
@@ -388,7 +387,7 @@ class _ListView extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               'Brak gier w promieniu ${_fmtKm(radius)}',
-              style: GoogleFonts.inter(
+              style: AppTheme.inter(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: t.label,
@@ -397,7 +396,7 @@ class _ListView extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               'Zwiększ zasięg powyżej',
-              style: GoogleFonts.inter(fontSize: 14, color: t.label3),
+              style: AppTheme.inter(fontSize: 14, color: t.label3),
             ),
           ],
         ),
@@ -446,7 +445,7 @@ class _ListView extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Text(
               label,
-              style: GoogleFonts.inter(
+              style: AppTheme.inter(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
                 color: AppColors.blue,
@@ -525,7 +524,7 @@ class _MapViewState extends State<_MapView> {
               const SizedBox(width: 4),
               Text(
                 g.title,
-                style: GoogleFonts.inter(
+                style: AppTheme.inter(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: isMatch && inRadius
@@ -704,7 +703,7 @@ class _MapViewState extends State<_MapView> {
                           ),
                           child: Text(
                             '⬤ ${_fmtKm(widget.radius)}',
-                            style: GoogleFonts.inter(
+                            style: AppTheme.inter(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                               color: AppColors.blue,
@@ -747,7 +746,7 @@ class _MapViewState extends State<_MapView> {
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
           child: Text(
             '${widget.filteredGames.length} gier w ${_fmtKm(widget.radius)}',
-            style: GoogleFonts.inter(
+            style: AppTheme.inter(
               fontSize: 13,
               fontWeight: FontWeight.w500,
               color: AppTokens.of(context).label2,

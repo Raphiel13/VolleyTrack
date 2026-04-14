@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
 import '../widgets/ios_widgets.dart';
@@ -59,7 +58,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
                 children: [
                   Text(
                     'Grupy',
-                    style: GoogleFonts.inter(
+                    style: AppTheme.inter(
                       fontSize: 34,
                       fontWeight: FontWeight.w700,
                       color: t.label,
@@ -80,7 +79,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
                       ),
                       child: Text(
                         '+ Nowa',
-                        style: GoogleFonts.inter(
+                        style: AppTheme.inter(
                             fontSize: 15, fontWeight: FontWeight.w600),
                       ),
                     ),
@@ -127,7 +126,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
                         leading: UserAvatar(name: name, size: 36),
                         title: Row(children: [
                           Text(name,
-                              style: GoogleFonts.inter(
+                              style: AppTheme.inter(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w500,
                                 color: t.label,
@@ -143,7 +142,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
                           ],
                         ]),
                         subtitle: Text(pos,
-                            style: GoogleFonts.inter(
+                            style: AppTheme.inter(
                                 fontSize: 13, color: t.label2)),
                         trailing: LevelDots(level: level),
                       ),
@@ -235,13 +234,13 @@ class _NotificationBannerState extends State<_NotificationBanner>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Ekipa Piątkowa',
-                          style: GoogleFonts.inter(
+                          style: AppTheme.inter(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: t.label)),
                       const SizedBox(height: 3),
                       Text('Admin otworzył zapisy na sobotę 10:00!',
-                          style: GoogleFonts.inter(
+                          style: AppTheme.inter(
                               fontSize: 13, color: t.label2)),
                       const SizedBox(height: 10),
                       Row(children: [
@@ -278,7 +277,7 @@ class _NotificationBannerState extends State<_NotificationBanner>
           ),
         ),
         child: Text(lbl,
-            style: GoogleFonts.inter(
+            style: AppTheme.inter(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
                 color: isSelected ? activeColor : t.label)),
@@ -310,14 +309,14 @@ class _GroupRow extends StatelessWidget {
                 : AppColors.blue.withOpacity(0.12),
           ),
           title: Text(group.name,
-              style: GoogleFonts.inter(
+              style: AppTheme.inter(
                   fontSize: 15, fontWeight: FontWeight.w500, color: t.label)),
           subtitle: Row(children: [
             Text('${group.members} członków · ',
-                style: GoogleFonts.inter(fontSize: 13, color: t.label2)),
+                style: AppTheme.inter(fontSize: 13, color: t.label2)),
             Text(
               group.isOpen ? 'Zapisy otwarte' : group.nextGame ?? '',
-              style: GoogleFonts.inter(
+              style: AppTheme.inter(
                   fontSize: 13,
                   color: group.isOpen ? AppColors.green : t.label2),
             ),
@@ -337,7 +336,7 @@ class _GroupRow extends StatelessWidget {
               ),
               child: Center(
                 child: Text('${group.unreadCount}',
-                    style: GoogleFonts.inter(
+                    style: AppTheme.inter(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         color: Colors.white)),
@@ -418,17 +417,17 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         title: Column(children: [
           Text(widget.group.name,
-              style: GoogleFonts.inter(
+              style: AppTheme.inter(
                   fontSize: 16, fontWeight: FontWeight.w600, color: t.label)),
           Text('${widget.group.members} członków',
-              style: GoogleFonts.inter(fontSize: 12, color: t.label2)),
+              style: AppTheme.inter(fontSize: 12, color: t.label2)),
         ]),
         actions: isAdmin
             ? [
                 TextButton(
                   onPressed: () {},
                   child: Text('🔓 Otwórz',
-                      style: GoogleFonts.inter(
+                      style: AppTheme.inter(
                           fontSize: 14, color: AppColors.blue)),
                 ),
               ]
@@ -508,7 +507,7 @@ class _MessageBubble extends StatelessWidget {
           border: Border.all(color: AppColors.green.withOpacity(0.2)),
         ),
         child: Text('📣 ${msg.text}',
-            style: GoogleFonts.inter(
+            style: AppTheme.inter(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: AppColors.green)),
@@ -534,7 +533,7 @@ class _MessageBubble extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 3),
                   child: Text(msg.senderName,
-                      style: GoogleFonts.inter(
+                      style: AppTheme.inter(
                           fontSize: 11,
                           color: t.label3,
                           fontWeight: FontWeight.w500)),
@@ -562,7 +561,7 @@ class _MessageBubble extends StatelessWidget {
                         ],
                 ),
                 child: Text(msg.text,
-                    style: GoogleFonts.inter(
+                    style: AppTheme.inter(
                         fontSize: 15,
                         color: msg.isMe ? Colors.white : t.label,
                         height: 1.4)),
@@ -570,7 +569,7 @@ class _MessageBubble extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 3),
                 child: Text(_fmt(msg.timestamp),
-                    style: GoogleFonts.inter(fontSize: 11, color: t.label3)),
+                    style: AppTheme.inter(fontSize: 11, color: t.label3)),
               ),
             ],
           ),
