@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,19 +8,48 @@ import '../theme/app_theme.dart';
 import '../models/models.dart';
 import '../widgets/ios_widgets.dart';
 
+// ─── Notification model & provider ───────────────────────────────────────────
+
+class _GroupNotification {
+  final String id;
+  final String groupName;
+  final String message;
+
+  const _GroupNotification({
+    required this.id,
+    required this.groupName,
+    required this.message,
+  });
+}
+
+/// Streams the first unread notification for [userId] from the
+/// 'notifications' collection. Emits null when there are none.
+final _firstNotificationProvider =
+    StreamProvider.family<_GroupNotification?, String>((ref, userId) {
+  return FirebaseFirestore.instance
+      .collection('notifications')
+      .where('userId', isEqualTo: userId)
+      .where('read', isEqualTo: false)
+      .limit(1)
+      .snapshots()
+      .map((snap) {
+    if (snap.docs.isEmpty) return null;
+    final doc = snap.docs.first;
+    final d = doc.data();
+    return _GroupNotification(
+      id: doc.id,
+      groupName: d['groupName'] as String? ?? '',
+      message: d['message'] as String? ?? '',
+    );
+  });
+});
+
 // ─── Groups Screen ────────────────────────────────────────────────────────────
 
 class GroupsScreen extends ConsumerWidget {
   final void Function(Group) onOpenChat;
 
   const GroupsScreen({super.key, required this.onOpenChat});
-
-  static const _members = [
-    ('Marek K.', PlayerLevel.advanced, 'Atakujący', true),
-    ('Anna W.', PlayerLevel.intermediate, 'Rozgrywający, Libero', false),
-    ('Ty', PlayerLevel.advanced, 'Przyjmujący, Środkowy', false),
-    ('Tomek B.', PlayerLevel.recreational, 'Zagrywający', false),
-  ];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -74,7 +104,7 @@ class GroupsScreen extends ConsumerWidget {
         SliverList(
           delegate: SliverChildListDelegate([
             const SizedBox(height: 16),
-            const _NotificationBanner(),
+            _NotificationBanner(uid: uid),
             const SizedBox(height: 4),
             const SectionLabel('Moje grupy'),
             groupsAsync.when(
@@ -142,45 +172,6 @@ class GroupsScreen extends ConsumerWidget {
                 );
               },
             ),
-            const SectionLabel('Ekipa Piątkowa – Skład'),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: IosCard(
-                child: Column(
-                  children: _members.asMap().entries.map((e) {
-                    final (name, level, pos, isAdmin) = e.value;
-                    final isMe = name == 'Ty';
-                    return Column(children: [
-                      IosRow(
-                        leading: UserAvatar(name: name, size: 36),
-                        title: Row(children: [
-                          Text(name,
-                              style: AppTheme.inter(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                color: t.label,
-                              )),
-                          if (isAdmin) ...[
-                            const SizedBox(width: 6),
-                            const ChipBadge('Admin',
-                                variant: ChipVariant.orange),
-                          ],
-                          if (isMe) ...[
-                            const SizedBox(width: 6),
-                            const ChipBadge('Ty', variant: ChipVariant.blue),
-                          ],
-                        ]),
-                        subtitle: Text(pos,
-                            style:
-                                AppTheme.inter(fontSize: 13, color: t.label2)),
-                        trailing: LevelDots(level: level),
-                      ),
-                      if (e.key < _members.length - 1) const IosSeparator(),
-                    ]);
-                  }).toList(),
-                ),
-              ),
-            ),
             const SizedBox(height: 32),
           ]),
         ),
@@ -191,17 +182,18 @@ class GroupsScreen extends ConsumerWidget {
 
 // ── Notification Banner ───────────────────────────────────────────────────────
 
-class _NotificationBanner extends StatefulWidget {
-  const _NotificationBanner();
+class _NotificationBanner extends ConsumerStatefulWidget {
+  final String uid;
+  const _NotificationBanner({required this.uid});
 
   @override
-  State<_NotificationBanner> createState() => _NotificationBannerState();
+  ConsumerState<_NotificationBanner> createState() =>
+      _NotificationBannerState();
 }
 
-class _NotificationBannerState extends State<_NotificationBanner>
+class _NotificationBannerState extends ConsumerState<_NotificationBanner>
     with SingleTickerProviderStateMixin {
   bool? _attending;
-  bool _visible = true;
   late final AnimationController _ctrl;
   late final Animation<Offset> _slide;
   late final Animation<double> _fade;
@@ -228,16 +220,28 @@ class _NotificationBannerState extends State<_NotificationBanner>
   Future<void> _onTap(bool value) async {
     if (_attending != null) return;
     setState(() => _attending = value);
+    // Mark notification as read in Firestore.
+    final notif =
+        ref.read(_firstNotificationProvider(widget.uid)).valueOrNull;
+    if (notif != null) {
+      FirebaseFirestore.instance
+          .collection('notifications')
+          .doc(notif.id)
+          .update({'read': true});
+    }
     await Future.delayed(const Duration(milliseconds: 550));
     if (!mounted) return;
     await _ctrl.forward();
-    if (!mounted) return;
-    setState(() => _visible = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!_visible) return const SizedBox.shrink();
+    final notifAsync = ref.watch(_firstNotificationProvider(widget.uid));
+
+    // Hide when loading, errored, or no unread notifications remain.
+    final notif = notifAsync.valueOrNull;
+    if (notif == null) return const SizedBox.shrink();
+
     final t = AppTokens.of(context);
     return FadeTransition(
       opacity: _fade,
@@ -250,27 +254,27 @@ class _NotificationBannerState extends State<_NotificationBanner>
             decoration: BoxDecoration(
               color: AppColors.green.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(16),
-              border:
-                  Border.all(color: AppColors.green.withValues(alpha: 0.2)),
+              border: Border.all(color: AppColors.green.withValues(alpha: 0.2)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(CupertinoIcons.bell_fill, size: 20, color: AppColors.green),
+                const Icon(CupertinoIcons.bell_fill,
+                    size: 20, color: AppColors.green),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Ekipa Piątkowa',
+                      Text(notif.groupName,
                           style: AppTheme.inter(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: t.label)),
                       const SizedBox(height: 3),
-                      Text('Admin otworzył zapisy na sobotę 10:00!',
-                          style: AppTheme.inter(
-                              fontSize: 13, color: t.label2)),
+                      Text(notif.message,
+                          style:
+                              AppTheme.inter(fontSize: 13, color: t.label2)),
                       const SizedBox(height: 10),
                       Row(children: [
                         _confirmBtn(context, '✓ Będę', value: true),
@@ -419,7 +423,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    _messages = List.from(MockData.messages);
+    _messages = [];
   }
 
   @override
