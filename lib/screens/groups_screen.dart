@@ -9,20 +9,10 @@ import '../widgets/ios_widgets.dart';
 
 // ─── Groups Screen ────────────────────────────────────────────────────────────
 
-class GroupsScreen extends ConsumerStatefulWidget {
+class GroupsScreen extends ConsumerWidget {
   final void Function(Group) onOpenChat;
 
   const GroupsScreen({super.key, required this.onOpenChat});
-
-  @override
-  ConsumerState<GroupsScreen> createState() => _GroupsScreenState();
-}
-
-class _GroupsScreenState extends ConsumerState<GroupsScreen> {
-  bool _showBanner = true;
-  // Local override list — populated once from the stream, then mutated
-  // by _onConfirm without waiting for a Firestore round-trip.
-  List<Group>? _localGroups;
 
   static const _members = [
     ('Marek K.', PlayerLevel.advanced, 'Atakujący', true),
@@ -31,31 +21,10 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
     ('Tomek B.', PlayerLevel.recreational, 'Zagrywający', false),
   ];
 
-  void _onConfirm(bool attending) {
-    if (_localGroups == null || _localGroups!.isEmpty) return;
-    setState(() {
-      _showBanner = false;
-      _localGroups![0] = _localGroups![0].copyWith(
-        unreadCount: 0,
-        nextGame: attending ? 'Sob, 10:00 · Będę ✓' : 'Sob, 10:00 · Nie mogę',
-      );
-    });
-  }
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final t = AppTokens.of(context);
-
     final uid = ref.watch(authRepositoryProvider).currentUser?.uid ?? '';
-
-    // Populate _localGroups from the stream on first successful emit only,
-    // so subsequent stream updates don't overwrite local UI mutations.
-    ref.listen<AsyncValue<List<Group>>>(userGroupsProvider(uid), (_, next) {
-      if (_localGroups == null) {
-        next.whenData((data) => setState(() => _localGroups = List.from(data)));
-      }
-    });
-
     final groupsAsync = ref.watch(userGroupsProvider(uid));
 
     return CustomScrollView(
@@ -105,76 +74,74 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
         SliverList(
           delegate: SliverChildListDelegate([
             const SizedBox(height: 16),
-            if (_showBanner) ...[
-              _NotificationBanner(onConfirm: _onConfirm),
-              const SizedBox(height: 4),
-            ],
+            const _NotificationBanner(),
+            const SizedBox(height: 4),
             const SectionLabel('Moje grupy'),
-            if (_localGroups == null) ...[
-              // Loading or first-frame — reflect stream state
-              if (groupsAsync.isLoading)
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: IosCard(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 28),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.blue,
-                          strokeWidth: 2.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                )
-              else if (groupsAsync.hasError)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: IosCard(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      child: Center(
-                        child: Text(
-                          'Nie udało się załadować grup',
-                          style: AppTheme.inter(fontSize: 14, color: t.label3),
-                        ),
+            groupsAsync.when(
+              loading: () => const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: IosCard(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 28),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.blue,
+                        strokeWidth: 2.5,
                       ),
                     ),
                   ),
                 ),
-            ] else if (_localGroups!.isEmpty) ...[
-              Padding(
+              ),
+              error: (_, __) => Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: IosCard(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    padding: const EdgeInsets.symmetric(vertical: 20),
                     child: Center(
                       child: Text(
-                        'Nie należysz jeszcze do żadnej grupy',
+                        'Nie udało się załadować grup',
                         style: AppTheme.inter(fontSize: 14, color: t.label3),
                       ),
                     ),
                   ),
                 ),
               ),
-            ] else ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: IosCard(
-                  child: Column(
-                    children: _localGroups!.asMap().entries.map((e) {
-                      final g = e.value;
-                      final i = e.key;
-                      return Column(children: [
-                        _GroupRow(group: g, onTap: () => widget.onOpenChat(g)),
-                        if (i < _localGroups!.length - 1)
-                          const IosSeparator(indent: 16),
-                      ]);
-                    }).toList(),
+              data: (groups) {
+                if (groups.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: IosCard(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        child: Center(
+                          child: Text(
+                            'Nie należysz jeszcze do żadnej grupy',
+                            style:
+                                AppTheme.inter(fontSize: 14, color: t.label3),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: IosCard(
+                    child: Column(
+                      children: groups.asMap().entries.map((e) {
+                        final g = e.value;
+                        final i = e.key;
+                        return Column(children: [
+                          _GroupRow(group: g, onTap: () => onOpenChat(g)),
+                          if (i < groups.length - 1)
+                            const IosSeparator(indent: 16),
+                        ]);
+                      }).toList(),
+                    ),
                   ),
-                ),
-              ),
-            ],
+                );
+              },
+            ),
             const SectionLabel('Ekipa Piątkowa – Skład'),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -204,8 +171,8 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
                           ],
                         ]),
                         subtitle: Text(pos,
-                            style: AppTheme.inter(
-                                fontSize: 13, color: t.label2)),
+                            style:
+                                AppTheme.inter(fontSize: 13, color: t.label2)),
                         trailing: LevelDots(level: level),
                       ),
                       if (e.key < _members.length - 1) const IosSeparator(),
@@ -225,9 +192,7 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
 // ── Notification Banner ───────────────────────────────────────────────────────
 
 class _NotificationBanner extends StatefulWidget {
-  final void Function(bool attending) onConfirm;
-
-  const _NotificationBanner({required this.onConfirm});
+  const _NotificationBanner();
 
   @override
   State<_NotificationBanner> createState() => _NotificationBannerState();
@@ -236,6 +201,7 @@ class _NotificationBanner extends StatefulWidget {
 class _NotificationBannerState extends State<_NotificationBanner>
     with SingleTickerProviderStateMixin {
   bool? _attending;
+  bool _visible = true;
   late final AnimationController _ctrl;
   late final Animation<Offset> _slide;
   late final Animation<double> _fade;
@@ -260,17 +226,18 @@ class _NotificationBannerState extends State<_NotificationBanner>
   }
 
   Future<void> _onTap(bool value) async {
-    if (_attending != null) return; // już wybrano
+    if (_attending != null) return;
     setState(() => _attending = value);
     await Future.delayed(const Duration(milliseconds: 550));
     if (!mounted) return;
     await _ctrl.forward();
     if (!mounted) return;
-    widget.onConfirm(value);
+    setState(() => _visible = false);
   }
 
   @override
   Widget build(BuildContext context) {
+    if (!_visible) return const SizedBox.shrink();
     final t = AppTokens.of(context);
     return FadeTransition(
       opacity: _fade,
