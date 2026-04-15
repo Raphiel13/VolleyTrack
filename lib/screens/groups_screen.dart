@@ -1,23 +1,27 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../repositories/group_repository.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
 import '../widgets/ios_widgets.dart';
 
 // ─── Groups Screen ────────────────────────────────────────────────────────────
 
-class GroupsScreen extends StatefulWidget {
+class GroupsScreen extends ConsumerStatefulWidget {
   final void Function(Group) onOpenChat;
 
   const GroupsScreen({super.key, required this.onOpenChat});
 
   @override
-  State<GroupsScreen> createState() => _GroupsScreenState();
+  ConsumerState<GroupsScreen> createState() => _GroupsScreenState();
 }
 
-class _GroupsScreenState extends State<GroupsScreen> {
+class _GroupsScreenState extends ConsumerState<GroupsScreen> {
   bool _showBanner = true;
-  late List<Group> _groups;
+  // Local override list — populated once from the stream, then mutated
+  // by _onConfirm without waiting for a Firestore round-trip.
+  List<Group>? _localGroups;
 
   static const _members = [
     ('Marek K.', PlayerLevel.advanced, 'Atakujący', true),
@@ -26,16 +30,11 @@ class _GroupsScreenState extends State<GroupsScreen> {
     ('Tomek B.', PlayerLevel.recreational, 'Zagrywający', false),
   ];
 
-  @override
-  void initState() {
-    super.initState();
-    _groups = List.from(MockData.groups);
-  }
-
   void _onConfirm(bool attending) {
+    if (_localGroups == null || _localGroups!.isEmpty) return;
     setState(() {
       _showBanner = false;
-      _groups[0] = _groups[0].copyWith(
+      _localGroups![0] = _localGroups![0].copyWith(
         unreadCount: 0,
         nextGame: attending ? 'Sob, 10:00 · Będę ✓' : 'Sob, 10:00 · Nie mogę',
       );
@@ -45,6 +44,16 @@ class _GroupsScreenState extends State<GroupsScreen> {
   @override
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
+
+    // Populate _localGroups from the stream on first successful emit only,
+    // so subsequent stream updates don't overwrite local UI mutations.
+    ref.listen<AsyncValue<List<Group>>>(groupsProvider, (_, next) {
+      if (_localGroups == null) {
+        next.whenData((data) => setState(() => _localGroups = List.from(data)));
+      }
+    });
+
+    final groupsAsync = ref.watch(groupsProvider);
 
     return CustomScrollView(
       slivers: [
@@ -98,22 +107,71 @@ class _GroupsScreenState extends State<GroupsScreen> {
               const SizedBox(height: 4),
             ],
             const SectionLabel('Moje grupy'),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: IosCard(
-                child: Column(
-                  children: _groups.asMap().entries.map((e) {
-                    final g = e.value;
-                    final i = e.key;
-                    return Column(children: [
-                      _GroupRow(group: g, onTap: () => widget.onOpenChat(g)),
-                      if (i < _groups.length - 1)
-                        const IosSeparator(indent: 16),
-                    ]);
-                  }).toList(),
+            if (_localGroups == null) ...[
+              // Loading or first-frame — reflect stream state
+              if (groupsAsync.isLoading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: IosCard(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 28),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.blue,
+                          strokeWidth: 2.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              else if (groupsAsync.hasError)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: IosCard(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      child: Center(
+                        child: Text(
+                          'Nie udało się załadować grup',
+                          style: AppTheme.inter(fontSize: 14, color: t.label3),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ] else if (_localGroups!.isEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: IosCard(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Text(
+                        'Nie należysz jeszcze do żadnej grupy',
+                        style: AppTheme.inter(fontSize: 14, color: t.label3),
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
+            ] else ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: IosCard(
+                  child: Column(
+                    children: _localGroups!.asMap().entries.map((e) {
+                      final g = e.value;
+                      final i = e.key;
+                      return Column(children: [
+                        _GroupRow(group: g, onTap: () => widget.onOpenChat(g)),
+                        if (i < _localGroups!.length - 1)
+                          const IosSeparator(indent: 16),
+                      ]);
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ],
             const SectionLabel('Ekipa Piątkowa – Skład'),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),

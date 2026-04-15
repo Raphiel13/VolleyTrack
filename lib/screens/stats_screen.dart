@@ -1,25 +1,37 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../repositories/auth_repository.dart';
+import '../repositories/stats_repository.dart';
 import '../theme/app_theme.dart';
-import '../models/models.dart';
 import '../widgets/ios_widgets.dart';
 
-class StatsScreen extends StatefulWidget {
+class StatsScreen extends ConsumerStatefulWidget {
   const StatsScreen({super.key});
 
   @override
-  State<StatsScreen> createState() => _StatsScreenState();
+  ConsumerState<StatsScreen> createState() => _StatsScreenState();
 }
 
-class _StatsScreenState extends State<StatsScreen> {
+class _StatsScreenState extends ConsumerState<StatsScreen> {
   bool _showAddSheet = false;
 
-  static const _activity = [0.0, 0.0, 0.6, 0.0, 0.8, 1.0, 0.4];
   static const _days = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb', 'Nd'];
 
   @override
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
+    final uid = ref.watch(authRepositoryProvider).currentUser?.uid ?? '';
+    final stats = ref.watch(statsProvider(uid)).valueOrNull ?? UserStats.empty;
+    final matchesAsync = ref.watch(matchesProvider(uid));
+
+    // Normalize weekly activity to [0.0–1.0] for the bar chart.
+    final rawActivity = _days.map((d) => (stats.weeklyActivity[d] ?? 0).toDouble()).toList();
+    final maxActivity = rawActivity.fold(0.0, math.max);
+    final activity = rawActivity.map((v) => maxActivity > 0 ? v / maxActivity : 0.0).toList();
+    final weekTotal = rawActivity.fold(0, (sum, v) => sum + v.toInt());
 
     return Stack(
       children: [
@@ -61,10 +73,15 @@ class _StatsScreenState extends State<StatsScreen> {
                   child: IosCard(
                     child: Row(
                       children: [
-                        ['24', 'Meczów'],
-                        ['16', 'Wygranych'],
-                        ['67%', 'Win%'],
-                        ['11.4', 'Pkt/mecz'],
+                        ['${stats.totalGames}', 'Meczów'],
+                        ['${stats.wins}', 'Wygranych'],
+                        ['${(stats.winRate * 100).round()}%', 'Win%'],
+                        [
+                          stats.avgPoints == 0
+                              ? '0'
+                              : stats.avgPoints.toStringAsFixed(1),
+                          'Pkt/mecz'
+                        ],
                       ].asMap().entries.map((e) {
                         return Expanded(
                           child: Container(
@@ -118,15 +135,18 @@ class _StatsScreenState extends State<StatsScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              '3 mecze w tym tygodniu',
+                              weekTotal == 1
+                                  ? '1 mecz w tym tygodniu'
+                                  : '$weekTotal meczów w tym tygodniu',
                               style: AppTheme.inter(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
                                 color: t.label,
                               ),
                             ),
-                            const ChipBadge('↑ aktywny',
-                                variant: ChipVariant.green),
+                            if (weekTotal > 0)
+                              const ChipBadge('↑ aktywny',
+                                  variant: ChipVariant.green),
                           ],
                         ),
                         const SizedBox(height: 16),
@@ -164,7 +184,7 @@ class _StatsScreenState extends State<StatsScreen> {
                                 ),
                               ),
                               barGroups: List.generate(7, (i) {
-                                final val = _activity[i];
+                                final val = activity[i];
                                 final isMax = val == 1.0;
                                 return BarChartGroupData(
                                   x: i,
@@ -214,10 +234,10 @@ class _StatsScreenState extends State<StatsScreen> {
                   child: IosCard(
                     child: Column(
                       children: [
-                        (Icons.bolt, 'Asy', '14', AppColors.blue),
-                        (Icons.shield_outlined, 'Bloki', '9', AppColors.orange),
-                        (Icons.sports_handball, 'Przyjęcia', '38', AppColors.green),
-                        (Icons.close_rounded, 'Błędy', '7', AppColors.red),
+                        (Icons.bolt, 'Asy', '${stats.totalAces}', AppColors.blue),
+                        (Icons.shield_outlined, 'Bloki', '${stats.totalBlocks}', AppColors.orange),
+                        (Icons.sports_handball, 'Przyjęcia', '${stats.totalReceptions}', AppColors.green),
+                        (Icons.close_rounded, 'Błędy', '${stats.totalErrors}', AppColors.red),
                       ].asMap().entries.map((e) {
                         final (icon, label, val, color) = e.value;
                         return Column(children: [
@@ -280,65 +300,130 @@ class _StatsScreenState extends State<StatsScreen> {
                 ),
 
                 // ── Match history list ─────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: IosCard(
-                    child: Column(
-                      children: MockData.matches.asMap().entries.map((e) {
-                        final m = e.value;
-                        final i = e.key;
-                        return Column(children: [
-                          IosRow(
-                            leading: Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: m.isWin
-                                    ? AppColors.green.withOpacity(0.12)
-                                    : AppColors.red.withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  m.isWin ? 'W' : 'L',
+                matchesAsync.when(
+                  loading: () => const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: IosCard(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 28),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.blue,
+                            strokeWidth: 2.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  error: (_, __) => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: IosCard(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        child: Center(
+                          child: Text(
+                            'Nie udało się załadować meczów',
+                            style: AppTheme.inter(
+                                fontSize: 14, color: t.label3),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  data: (matches) {
+                    if (matches.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: IosCard(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 28),
+                            child: Column(
+                              children: [
+                                Icon(Icons.sports_volleyball,
+                                    size: 36, color: t.label4),
+                                const SizedBox(height: 10),
+                                Text(
+                                  'Brak historii meczów',
                                   style: AppTheme.inter(
-                                    fontSize: 13,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: t.label2),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Dodaj swój pierwszy mecz poniżej',
+                                  style: AppTheme.inter(
+                                      fontSize: 13, color: t.label3),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: IosCard(
+                        child: Column(
+                          children: matches.asMap().entries.map((e) {
+                            final m = e.value;
+                            final i = e.key;
+                            return Column(children: [
+                              IosRow(
+                                leading: Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: m.isWin
+                                        ? AppColors.green.withValues(alpha: 0.12)
+                                        : AppColors.red.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      m.isWin ? 'W' : 'L',
+                                      style: AppTheme.inter(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: m.isWin
+                                            ? AppColors.green
+                                            : AppColors.red,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                title: Text(
+                                  m.opponent,
+                                  style: AppTheme.inter(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                    color: t.label,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  '${m.date} · ${m.score}',
+                                  style: AppTheme.inter(
+                                      fontSize: 13, color: t.label2),
+                                ),
+                                trailing: Text(
+                                  '${m.points} pkt',
+                                  style: AppTheme.inter(
+                                    fontSize: 17,
                                     fontWeight: FontWeight.w700,
                                     color: m.isWin
                                         ? AppColors.green
-                                        : AppColors.red,
+                                        : t.label2,
                                   ),
                                 ),
                               ),
-                            ),
-                            title: Text(
-                              m.opponent,
-                              style: AppTheme.inter(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                color: t.label,
-                              ),
-                            ),
-                            subtitle: Text(
-                              '${m.date} · ${m.score}',
-                              style: AppTheme.inter(
-                                  fontSize: 13, color: t.label2),
-                            ),
-                            trailing: Text(
-                              '${m.points} pkt',
-                              style: AppTheme.inter(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w700,
-                                color: m.isWin ? AppColors.green : t.label2,
-                              ),
-                            ),
-                          ),
-                          if (i < MockData.matches.length - 1)
-                            const IosSeparator(),
-                        ]);
-                      }).toList(),
-                    ),
-                  ),
+                              if (i < matches.length - 1)
+                                const IosSeparator(),
+                            ]);
+                          }).toList(),
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 32),
               ]),
