@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../repositories/auth_repository.dart';
 import '../repositories/group_repository.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
@@ -45,15 +46,17 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
 
+    final uid = ref.watch(authRepositoryProvider).currentUser?.uid ?? '';
+
     // Populate _localGroups from the stream on first successful emit only,
     // so subsequent stream updates don't overwrite local UI mutations.
-    ref.listen<AsyncValue<List<Group>>>(groupsProvider, (_, next) {
+    ref.listen<AsyncValue<List<Group>>>(userGroupsProvider(uid), (_, next) {
       if (_localGroups == null) {
         next.whenData((data) => setState(() => _localGroups = List.from(data)));
       }
     });
 
-    final groupsAsync = ref.watch(groupsProvider);
+    final groupsAsync = ref.watch(userGroupsProvider(uid));
 
     return CustomScrollView(
       slivers: [
