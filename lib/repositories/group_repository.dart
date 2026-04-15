@@ -46,6 +46,7 @@ class GroupRepository {
     required String adminId,
     bool isOpen = false,
     String? nextGame,
+    String? icon,
   }) async {
     final doc = await _groups.add({
       'name': name,
@@ -54,6 +55,7 @@ class GroupRepository {
       'isOpen': isOpen,
       'unreadCount': 0,
       if (nextGame != null) 'nextGame': nextGame,
+      if (icon != null) 'icon': icon,
     });
 
     final snap = await doc.get();
@@ -110,6 +112,7 @@ class GroupRepository {
       isOpen: d['isOpen'] as bool? ?? false,
       unreadCount: (d['unreadCount'] as num? ?? 0).toInt(),
       nextGame: d['nextGame'] as String?,
+      icon: d['icon'] as String?,
     );
   }
 }
