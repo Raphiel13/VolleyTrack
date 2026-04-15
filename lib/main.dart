@@ -13,6 +13,7 @@ import 'screens/games_screen.dart';
 import 'screens/game_detail_sheet.dart';
 import 'screens/stats_screen.dart';
 import 'screens/groups_screen.dart';
+import 'screens/group_detail_screen.dart';
 import 'screens/profile_screen.dart';
 
 void main() async {
@@ -184,7 +185,7 @@ class _MainShellState extends State<MainShell> {
             setState(() => _tab = 3);
             Future.delayed(const Duration(milliseconds: 50), () {
               _navKeys[3].currentState?.push(MaterialPageRoute(
-                    builder: (_) => ChatScreen(group: g),
+                    builder: (_) => GroupDetailScreen(group: g),
                   ));
             });
           },
@@ -204,7 +205,7 @@ class _MainShellState extends State<MainShell> {
         child: GroupsScreen(
           onOpenChat: (g) => _navKeys[3].currentState?.push(
                 MaterialPageRoute(
-                  builder: (_) => ChatScreen(group: g),
+                  builder: (_) => GroupDetailScreen(group: g),
                 ),
               ),
         ),
