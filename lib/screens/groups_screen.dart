@@ -44,12 +44,31 @@ final _firstNotificationProvider =
   });
 });
 
+// ─── Icon picker data ─────────────────────────────────────────────────────────
+
+const _kGroupIcons = <String, IconData>{
+  'person_2_fill': CupertinoIcons.person_2_fill,
+  'rosette': CupertinoIcons.rosette,
+  'star_fill': CupertinoIcons.star_fill,
+  'flame_fill': CupertinoIcons.flame_fill,
+  'sportscourt_fill': CupertinoIcons.sportscourt_fill,
+};
+
 // ─── Groups Screen ────────────────────────────────────────────────────────────
 
 class GroupsScreen extends ConsumerWidget {
   final void Function(Group) onOpenChat;
 
   const GroupsScreen({super.key, required this.onOpenChat});
+
+  void _showCreateSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _CreateGroupSheet(),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -80,7 +99,7 @@ class GroupsScreen extends ConsumerWidget {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 6),
                     child: TextButton(
-                      onPressed: () {},
+                      onPressed: () => _showCreateSheet(context),
                       style: TextButton.styleFrom(
                         backgroundColor: AppColors.blue,
                         foregroundColor: Colors.white,
@@ -322,6 +341,9 @@ class _NotificationBannerState extends ConsumerState<_NotificationBanner>
 // ── Group helpers ─────────────────────────────────────────────────────────────
 
 IconData _groupIcon(Group group) {
+  if (group.icon != null && _kGroupIcons.containsKey(group.icon)) {
+    return _kGroupIcons[group.icon]!;
+  }
   final n = group.name.toLowerCase();
   if (n.contains('beach') || n.contains('plaż')) return Icons.beach_access;
   if (n.contains('liga') || n.contains('turniej')) return Icons.emoji_events;
@@ -401,6 +423,213 @@ class _GroupRow extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+// ─── Create Group Sheet ───────────────────────────────────────────────────────
+
+class _CreateGroupSheet extends ConsumerStatefulWidget {
+  const _CreateGroupSheet();
+
+  @override
+  ConsumerState<_CreateGroupSheet> createState() => _CreateGroupSheetState();
+}
+
+class _CreateGroupSheetState extends ConsumerState<_CreateGroupSheet> {
+  final _nameCtrl = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  String _selectedIcon = 'person_2_fill';
+  bool _loading = false;
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    setState(() => _loading = true);
+
+    final uid =
+        ref.read(authRepositoryProvider).currentUser?.uid ?? '';
+    try {
+      await ref.read(groupRepositoryProvider).createGroup(
+            name: _nameCtrl.text.trim(),
+            adminId: uid,
+            icon: _selectedIcon,
+          );
+      if (mounted) Navigator.pop(context);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Nie udało się utworzyć grupy',
+                style: AppTheme.inter()),
+            backgroundColor: AppColors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTokens.of(context);
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: t.bg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, bottomInset + 32),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── Handle ──────────────────────────────────────────────────
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: t.separator,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Nowa grupa',
+              style: AppTheme.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: t.label),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+
+            // ── Name field ───────────────────────────────────────────────
+            Text('Nazwa grupy',
+                style: AppTheme.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: t.label2)),
+            const SizedBox(height: 6),
+            TextFormField(
+              controller: _nameCtrl,
+              autofocus: true,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                hintText: 'np. Ekipa Piątkowa',
+                hintStyle: AppTheme.inter(color: t.label4),
+                filled: true,
+                fillColor: t.bg2,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      const BorderSide(color: AppColors.blue, width: 1.5),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 12),
+              ),
+              style: AppTheme.inter(fontSize: 16, color: t.label),
+              validator: (v) {
+                if (v == null || v.trim().length < 3) {
+                  return 'Nazwa musi mieć co najmniej 3 znaki';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 24),
+
+            // ── Icon picker ──────────────────────────────────────────────
+            Text('Ikona grupy',
+                style: AppTheme.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: t.label2)),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: _kGroupIcons.entries.map((e) {
+                final isSelected = _selectedIcon == e.key;
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedIcon = e.key),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.blue.withValues(alpha: 0.12)
+                          : t.bg2,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.blue
+                            : t.separator,
+                        width: isSelected ? 1.5 : 0.5,
+                      ),
+                    ),
+                    child: Icon(
+                      e.value,
+                      size: 24,
+                      color:
+                          isSelected ? AppColors.blue : t.label3,
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 28),
+
+            // ── Submit button ────────────────────────────────────────────
+            SizedBox(
+              height: 50,
+              child: ElevatedButton(
+                onPressed: _loading ? null : _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.blue,
+                  disabledBackgroundColor:
+                      AppColors.blue.withValues(alpha: 0.5),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                  elevation: 0,
+                ),
+                child: _loading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.5,
+                        ),
+                      )
+                    : Text(
+                        'Utwórz grupę',
+                        style: AppTheme.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white),
+                      ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
