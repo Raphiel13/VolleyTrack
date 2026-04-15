@@ -84,21 +84,21 @@ class HomeScreen extends ConsumerWidget {
             const SizedBox(height: 12),
 
             // ── Quick stats ──────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
                   _QuickStat(
-                    const Icon(Icons.local_fire_department,
+                    Icon(Icons.local_fire_department,
                         size: 20, color: AppColors.orange),
                     '5 W', 'Seria'),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   _QuickStat(
-                    const Icon(Icons.bolt, size: 20, color: AppColors.blue),
+                    Icon(Icons.bolt, size: 20, color: AppColors.blue),
                     '2.3', 'Asy/mecz'),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   _QuickStat(
-                    const Icon(Icons.location_on,
+                    Icon(Icons.location_on,
                         size: 20, color: AppColors.red),
                     '1.2 km', 'Najbliższa'),
                 ],
@@ -448,7 +448,6 @@ class _GroupTile extends StatelessWidget {
       child: SizedBox(
         width: 156,
         child: Stack(
-          clipBehavior: Clip.none,
           children: [
             IosCard(
               padding: const EdgeInsets.all(14),
@@ -485,21 +484,38 @@ class _GroupTile extends StatelessWidget {
                     style: AppTheme.inter(fontSize: 12, color: t.label3),
                   ),
                   const Spacer(),
-                  Text(
-                    group.isOpen ? '🔓 Zapisy otwarte' : '⏰ ${group.nextGame}',
-                    style: AppTheme.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: group.isOpen ? AppColors.green : t.label3,
-                    ),
+                  Row(
+                    children: [
+                      Icon(
+                        group.isOpen
+                            ? CupertinoIcons.lock_open
+                            : CupertinoIcons.clock,
+                        size: 11,
+                        color: group.isOpen ? AppColors.green : t.label3,
+                      ),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          group.isOpen
+                              ? 'Zapisy otwarte'
+                              : '${group.nextGame}',
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTheme.inter(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: group.isOpen ? AppColors.green : t.label3,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
             if (group.unreadCount > 0)
               Positioned(
-                top: -6,
-                right: -6,
+                top: 6,
+                right: 6,
                 child: Container(
                   width: 20,
                   height: 20,

@@ -228,7 +228,7 @@ class _NotificationBannerState extends State<_NotificationBanner>
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('🔔', style: TextStyle(fontSize: 20)),
+                const Icon(CupertinoIcons.bell_fill, size: 20, color: AppColors.green),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -451,9 +451,14 @@ class _ChatScreenState extends State<ChatScreen> {
             ? [
                 TextButton(
                   onPressed: () {},
-                  child: Text('🔓 Otwórz',
-                      style: AppTheme.inter(
-                          fontSize: 14, color: AppColors.blue)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(CupertinoIcons.lock_open, size: 14, color: AppColors.blue),
+                      const SizedBox(width: 4),
+                      Text('Otwórz', style: AppTheme.inter(fontSize: 14, color: AppColors.blue)),
+                    ],
+                  ),
                 ),
               ]
             : null,
@@ -531,11 +536,20 @@ class _MessageBubble extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.green.withOpacity(0.2)),
         ),
-        child: Text('📣 ${msg.text}',
-            style: AppTheme.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.green)),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(CupertinoIcons.speaker_2_fill, size: 14, color: AppColors.green),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(msg.text,
+                  style: AppTheme.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.green)),
+            ),
+          ],
+        ),
       );
     }
 
