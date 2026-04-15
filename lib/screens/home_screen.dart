@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repositories/auth_repository.dart';
 import '../repositories/game_repository.dart';
+import '../repositories/group_repository.dart';
 import '../repositories/stats_repository.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
@@ -28,6 +29,7 @@ class HomeScreen extends ConsumerWidget {
     final gamesAsync = ref.watch(openGamesProvider);
     final uid = ref.watch(authRepositoryProvider).currentUser?.uid ?? '';
     final stats = ref.watch(statsProvider(uid)).valueOrNull ?? UserStats.empty;
+    final groupsAsync = ref.watch(userGroupsProvider(uid));
 
     return CustomScrollView(
       slivers: [
@@ -240,18 +242,49 @@ class HomeScreen extends ConsumerWidget {
               action: 'Wszystkie',
               onAction: onGoGames,
             ),
-            SizedBox(
-              height: 156,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: MockData.groups.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 12),
-                itemBuilder: (_, i) => _GroupTile(
-                  group: MockData.groups[i],
-                  onTap: () => onOpenGroup(MockData.groups[i]),
+            groupsAsync.when(
+              loading: () => const SizedBox(
+                height: 156,
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: AppColors.blue,
+                    strokeWidth: 2.5,
+                  ),
                 ),
               ),
+              error: (_, __) => const SizedBox.shrink(),
+              data: (groups) {
+                final preview = groups.take(3).toList();
+                if (preview.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: IosCard(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        child: Center(
+                          child: Text(
+                            'Nie należysz jeszcze do żadnej grupy',
+                            style: AppTheme.inter(fontSize: 14, color: t.label3),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+                return SizedBox(
+                  height: 156,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: preview.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    itemBuilder: (_, i) => _GroupTile(
+                      group: preview[i],
+                      onTap: () => onOpenGroup(preview[i]),
+                    ),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 32),
           ]),
