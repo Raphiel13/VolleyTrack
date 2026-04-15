@@ -144,6 +144,7 @@ class Group {
   final bool isOpen;
   final int unreadCount;
   final String? nextGame;
+  final String? icon;
 
   const Group({
     required this.id,
@@ -153,6 +154,7 @@ class Group {
     this.isOpen = false,
     this.unreadCount = 0,
     this.nextGame,
+    this.icon,
   });
 
   Group copyWith({
@@ -162,6 +164,7 @@ class Group {
     bool? isOpen,
     int? unreadCount,
     String? nextGame,
+    String? icon,
   }) =>
       Group(
         id: id,
@@ -171,6 +174,7 @@ class Group {
         isOpen: isOpen ?? this.isOpen,
         unreadCount: unreadCount ?? this.unreadCount,
         nextGame: nextGame ?? this.nextGame,
+        icon: icon ?? this.icon,
       );
 }
 
