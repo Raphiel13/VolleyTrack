@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repositories/auth_repository.dart';
@@ -31,18 +32,29 @@ class GameConfirmation {
   const GameConfirmation({required this.userId, required this.status});
 }
 
-class GroupGame {
+class GroupEvent {
   final String id;
   final DateTime dateTime;
   final String location;
+  final String createdBy;
   final int confirmedCount;
+  final List<DateTime> cancelledDates;
 
-  const GroupGame({
+  const GroupEvent({
     required this.id,
     required this.dateTime,
     required this.location,
+    required this.createdBy,
     required this.confirmedCount,
+    required this.cancelledDates,
   });
+
+  bool get isCancelled => cancelledDates.any((d) =>
+      d.year == dateTime.year &&
+      d.month == dateTime.month &&
+      d.day == dateTime.day &&
+      d.hour == dateTime.hour &&
+      d.minute == dateTime.minute);
 }
 
 class GroupMessage {
@@ -131,26 +143,36 @@ final _confirmationsProvider =
           .toList());
 });
 
-/// Streams upcoming games for the group ordered by dateTime.
-final _groupGamesProvider =
-    StreamProvider.family<List<GroupGame>, String>((ref, groupId) {
+/// Streams upcoming events for the group ordered by dateTime.
+/// Events where dateTime appears in cancelledDates are filtered out client-side.
+final _groupEventsProvider =
+    StreamProvider.family<List<GroupEvent>, String>((ref, groupId) {
   return FirebaseFirestore.instance
-      .collection('games')
+      .collection('events')
       .where('groupId', isEqualTo: groupId)
       .where('dateTime', isGreaterThan: Timestamp.now())
       .orderBy('dateTime')
       .snapshots()
-      .map((snap) => snap.docs.map((doc) {
+      .map((snap) => snap.docs
+          .map((doc) {
             final d = doc.data();
             final confirmed =
                 List.from((d['confirmedIds'] as List?) ?? []);
-            return GroupGame(
+            final cancelled = ((d['cancelledDates'] as List?) ?? [])
+                .whereType<Timestamp>()
+                .map((t) => t.toDate())
+                .toList();
+            return GroupEvent(
               id: doc.id,
               dateTime: (d['dateTime'] as Timestamp).toDate(),
               location: d['location'] as String? ?? '',
+              createdBy: d['createdBy'] as String? ?? '',
               confirmedCount: confirmed.length,
+              cancelledDates: cancelled,
             );
-          }).toList());
+          })
+          .where((e) => !e.isCancelled)
+          .toList());
 });
 
 /// Streams group messages newest-first (reversed in ListView).
@@ -368,49 +390,99 @@ class _ScheduleTab extends ConsumerWidget {
   final Group group;
   const _ScheduleTab({required this.group});
 
+  void _showAddSheet(BuildContext context, String uid) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _AddEventSheet(groupId: group.id, uid: uid),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = AppTokens.of(context);
-    final gamesAsync = ref.watch(_groupGamesProvider(group.id));
+    final uid = ref.watch(authRepositoryProvider).currentUser?.uid ?? '';
+    // group.adminName stores the adminId (see GroupRepository._fromDoc)
+    final isAdmin = uid.isNotEmpty && uid == group.adminName;
+    final eventsAsync = ref.watch(_groupEventsProvider(group.id));
 
-    return gamesAsync.when(
-      loading: () => const Center(
-        child:
-            CircularProgressIndicator(color: AppColors.blue, strokeWidth: 2.5),
-      ),
-      error: (_, __) => Center(
-        child: Text('Nie udało się załadować terminarza',
-            style: AppTheme.inter(fontSize: 14, color: t.label3)),
-      ),
-      data: (games) {
-        if (games.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.calendar_today_outlined, size: 44, color: t.label4),
-                const SizedBox(height: 12),
-                Text('Brak zaplanowanych gier',
-                    style: AppTheme.inter(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: t.label2)),
-                const SizedBox(height: 4),
-                Text('Dodaj pierwszy termin dla grupy',
-                    style: AppTheme.inter(fontSize: 13, color: t.label3)),
-              ],
-            ),
-          );
-        }
-        return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-          itemCount: games.length,
-          itemBuilder: (_, i) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _GameTile(game: games[i]),
+    return Stack(
+      children: [
+        eventsAsync.when(
+          loading: () => const Center(
+            child: CircularProgressIndicator(
+                color: AppColors.blue, strokeWidth: 2.5),
           ),
-        );
-      },
+          error: (_, __) => Center(
+            child: Text('Nie udało się załadować terminarza',
+                style: AppTheme.inter(fontSize: 14, color: t.label3)),
+          ),
+          data: (events) {
+            if (events.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.calendar_today_outlined,
+                        size: 44, color: t.label4),
+                    const SizedBox(height: 12),
+                    Text('Brak zaplanowanych terminów',
+                        style: AppTheme.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: t.label2)),
+                    const SizedBox(height: 4),
+                    Text(
+                      isAdmin
+                          ? 'Kliknij + aby dodać pierwszy termin'
+                          : 'Admin jeszcze nie dodał terminów',
+                      style:
+                          AppTheme.inter(fontSize: 13, color: t.label3),
+                    ),
+                  ],
+                ),
+              );
+            }
+            return ListView.builder(
+              padding: EdgeInsets.fromLTRB(
+                  16, 12, 16, isAdmin ? 96 : 32),
+              itemCount: events.length,
+              itemBuilder: (_, i) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _EventTile(event: events[i], isAdmin: isAdmin),
+              ),
+            );
+          },
+        ),
+
+        // ── Admin FAB ─────────────────────────────────────────────────────
+        if (isAdmin)
+          Positioned(
+            right: 20,
+            bottom: 24,
+            child: GestureDetector(
+              onTap: () => _showAddSheet(context, uid),
+              child: Container(
+                width: 54,
+                height: 54,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.blue,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.blue.withValues(alpha: 0.35),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.add,
+                    color: Colors.white, size: 26),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -550,19 +622,61 @@ class _ConfirmationBadge extends StatelessWidget {
       };
 }
 
-class _GameTile extends StatelessWidget {
-  final GroupGame game;
-  const _GameTile({required this.game});
+class _EventTile extends StatelessWidget {
+  final GroupEvent event;
+  final bool isAdmin;
+  const _EventTile({required this.event, this.isAdmin = false});
+
+  Future<void> _cancel(BuildContext context) async {
+    final confirmed = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (_) => CupertinoAlertDialog(
+        title: const Text('Anulować termin?'),
+        content: const Text('Termin zostanie oznaczony jako odwołany.'),
+        actions: [
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Anuluj termin'),
+          ),
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Wróć'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await FirebaseFirestore.instance
+        .collection('events')
+        .doc(event.id)
+        .update({
+      'cancelledDates':
+          FieldValue.arrayUnion([Timestamp.fromDate(event.dateTime)]),
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
     const weekdays = ['', 'Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb', 'Nd'];
     const months = [
-      '', 'sty', 'lut', 'mar', 'kwi', 'maj', 'cze',
-      'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'
+      '',
+      'sty',
+      'lut',
+      'mar',
+      'kwi',
+      'maj',
+      'cze',
+      'lip',
+      'sie',
+      'wrz',
+      'paź',
+      'lis',
+      'gru'
     ];
-    final dt = game.dateTime;
+    final dt = event.dateTime;
     final time =
         '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 
@@ -570,6 +684,7 @@ class _GameTile extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       child: Row(
         children: [
+          // ── Date box ────────────────────────────────────────────────────
           Container(
             width: 52,
             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -591,12 +706,13 @@ class _GameTile extends StatelessWidget {
                         color: AppColors.blue,
                         letterSpacing: -0.5)),
                 Text(months[dt.month],
-                    style: AppTheme.inter(
-                        fontSize: 11, color: AppColors.blue)),
+                    style:
+                        AppTheme.inter(fontSize: 11, color: AppColors.blue)),
               ],
             ),
           ),
           const SizedBox(width: 12),
+          // ── Info ─────────────────────────────────────────────────────────
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -607,15 +723,16 @@ class _GameTile extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                         color: t.label)),
                 const SizedBox(height: 3),
-                Text(game.location,
+                Text(event.location,
                     style: AppTheme.inter(fontSize: 13, color: t.label2)),
               ],
             ),
           ),
+          // ── Confirmed count ──────────────────────────────────────────────
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('${game.confirmedCount}',
+              Text('${event.confirmedCount}',
                   style: AppTheme.inter(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
@@ -624,7 +741,300 @@ class _GameTile extends StatelessWidget {
                   style: AppTheme.inter(fontSize: 11, color: t.label3)),
             ],
           ),
+          // ── Admin cancel ─────────────────────────────────────────────────
+          if (isAdmin) ...[
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () => _cancel(context),
+              child: Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: AppColors.red.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(CupertinoIcons.xmark,
+                    size: 14, color: AppColors.red),
+              ),
+            ),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+// ─── Add Event Sheet ──────────────────────────────────────────────────────────
+
+class _AddEventSheet extends ConsumerStatefulWidget {
+  final String groupId;
+  final String uid;
+  const _AddEventSheet({required this.groupId, required this.uid});
+
+  @override
+  ConsumerState<_AddEventSheet> createState() => _AddEventSheetState();
+}
+
+class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
+  final _locationCtrl = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
+  bool _loading = false;
+
+  @override
+  void dispose() {
+    _locationCtrl.dispose();
+    super.dispose();
+  }
+
+  void _pickDateTime(BuildContext context) {
+    final t = AppTokens.of(context);
+    showCupertinoModalPopup<void>(
+      context: context,
+      builder: (_) => Container(
+        height: 300,
+        color: t.bg,
+        child: Column(
+          children: [
+            // ── Toolbar ──────────────────────────────────────────────────
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: t.bg2,
+                border: Border(
+                    bottom: BorderSide(color: t.separator, width: 0.5)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('Anuluj',
+                        style: AppTheme.inter(
+                            fontSize: 16, color: t.label2)),
+                  ),
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('Gotowe',
+                        style: AppTheme.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.blue)),
+                  ),
+                ],
+              ),
+            ),
+            // ── Picker ───────────────────────────────────────────────────
+            Expanded(
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.dateAndTime,
+                initialDateTime: _selectedDate,
+                minimumDate: DateTime.now(),
+                use24hFormat: true,
+                minuteInterval: 5,
+                onDateTimeChanged: (dt) =>
+                    setState(() => _selectedDate = dt),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    setState(() => _loading = true);
+
+    try {
+      await FirebaseFirestore.instance.collection('events').add({
+        'groupId': widget.groupId,
+        'dateTime': Timestamp.fromDate(_selectedDate),
+        'location': _locationCtrl.text.trim(),
+        'createdBy': widget.uid,
+        'confirmedIds': [],
+        'cancelledDates': [],
+      });
+      if (mounted) Navigator.pop(context);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Nie udało się dodać terminu',
+                style: AppTheme.inter()),
+            backgroundColor: AppColors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTokens.of(context);
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    const weekdays = ['', 'Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb', 'Nd'];
+    const months = [
+      '',
+      'sty',
+      'lut',
+      'mar',
+      'kwi',
+      'maj',
+      'cze',
+      'lip',
+      'sie',
+      'wrz',
+      'paź',
+      'lis',
+      'gru'
+    ];
+    final dt = _selectedDate;
+    final dateLabel =
+        '${weekdays[dt.weekday]}, ${dt.day} ${months[dt.month]} · '
+        '${dt.hour.toString().padLeft(2, '0')}:${(dt.minute ~/ 5 * 5).toString().padLeft(2, '0')}';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: t.bg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, bottomInset + 32),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── Handle ──────────────────────────────────────────────────
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: t.separator,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text('Nowy termin',
+                style: AppTheme.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: t.label),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 24),
+
+            // ── Date & time picker ───────────────────────────────────────
+            Text('Data i godzina',
+                style: AppTheme.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: t.label2)),
+            const SizedBox(height: 6),
+            GestureDetector(
+              onTap: () => _pickDateTime(context),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 13),
+                decoration: BoxDecoration(
+                  color: t.bg2,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(children: [
+                  const Icon(CupertinoIcons.calendar,
+                      size: 18, color: AppColors.blue),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(dateLabel,
+                        style: AppTheme.inter(
+                            fontSize: 15, color: t.label)),
+                  ),
+                  Icon(CupertinoIcons.chevron_right,
+                      size: 14, color: t.label3),
+                ]),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // ── Location field ───────────────────────────────────────────
+            Text('Lokalizacja',
+                style: AppTheme.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: t.label2)),
+            const SizedBox(height: 6),
+            TextFormField(
+              controller: _locationCtrl,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                hintText: 'np. Hala sportowa, ul. Sportowa 1',
+                hintStyle: AppTheme.inter(color: t.label4),
+                filled: true,
+                fillColor: t.bg2,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      const BorderSide(color: AppColors.blue, width: 1.5),
+                ),
+                prefixIcon: const Icon(CupertinoIcons.location_fill,
+                    size: 16, color: AppColors.blue),
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 12),
+              ),
+              style: AppTheme.inter(fontSize: 15, color: t.label),
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) {
+                  return 'Podaj lokalizację';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 28),
+
+            // ── Submit ───────────────────────────────────────────────────
+            SizedBox(
+              height: 50,
+              child: ElevatedButton(
+                onPressed: _loading ? null : _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.blue,
+                  disabledBackgroundColor:
+                      AppColors.blue.withValues(alpha: 0.5),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                  elevation: 0,
+                ),
+                child: _loading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2.5),
+                      )
+                    : Text('Dodaj termin',
+                        style: AppTheme.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
