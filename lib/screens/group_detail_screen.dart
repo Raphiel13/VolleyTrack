@@ -84,7 +84,8 @@ final _membersProvider =
       .snapshots()
       .asyncMap((groupSnap) async {
     if (!groupSnap.exists) return <GroupMember>[];
-    final d = groupSnap.data()!;
+    final d = groupSnap.data();
+    if (d == null) return <GroupMember>[];
     final memberIds =
         List<String>.from((d['members'] as List?) ?? []);
     if (memberIds.isEmpty) return <GroupMember>[];
@@ -630,18 +631,21 @@ class _EventTile extends StatelessWidget {
   Future<void> _cancel(BuildContext context) async {
     final confirmed = await showCupertinoDialog<bool>(
       context: context,
-      builder: (_) => CupertinoAlertDialog(
+      // Use the dialog's own context (dlgCtx) for Navigator.pop —
+      // never the tile's context, which may deactivate before the
+      // dialog closes and trigger "Looking up a deactivated widget".
+      builder: (dlgCtx) => CupertinoAlertDialog(
         title: const Text('Anulować termin?'),
         content: const Text('Termin zostanie oznaczony jako odwołany.'),
         actions: [
           CupertinoDialogAction(
             isDestructiveAction: true,
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dlgCtx, true),
             child: const Text('Anuluj termin'),
           ),
           CupertinoDialogAction(
             isDefaultAction: true,
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dlgCtx, false),
             child: const Text('Wróć'),
           ),
         ],
@@ -779,7 +783,13 @@ class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
   final _locationCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
+  late DateTime _selectedDate = _roundedNow();
+
+  static DateTime _roundedNow() {
+    final base = DateTime.now().add(const Duration(days: 1));
+    final minute = (base.minute ~/ 5) * 5;
+    return DateTime(base.year, base.month, base.day, base.hour, minute);
+  }
   bool _loading = false;
 
   @override
@@ -792,7 +802,11 @@ class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
     final t = AppTokens.of(context);
     showCupertinoModalPopup<void>(
       context: context,
-      builder: (_) => Container(
+      // Use popupCtx (the popup's own context) for Navigator.pop —
+      // never the sheet's outer context, which may deactivate while
+      // the picker is visible and cause a null-check crash inside
+      // Navigator.of(context)!.navigatorState.
+      builder: (popupCtx) => Container(
         height: 300,
         color: t.bg,
         child: Column(
@@ -811,14 +825,14 @@ class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
                 children: [
                   CupertinoButton(
                     padding: EdgeInsets.zero,
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () => Navigator.pop(popupCtx),
                     child: Text('Anuluj',
                         style: AppTheme.inter(
                             fontSize: 16, color: t.label2)),
                   ),
                   CupertinoButton(
                     padding: EdgeInsets.zero,
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () => Navigator.pop(popupCtx),
                     child: Text('Gotowe',
                         style: AppTheme.inter(
                             fontSize: 16,
@@ -901,7 +915,7 @@ class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
     final dt = _selectedDate;
     final dateLabel =
         '${weekdays[dt.weekday]}, ${dt.day} ${months[dt.month]} · '
-        '${dt.hour.toString().padLeft(2, '0')}:${(dt.minute ~/ 5 * 5).toString().padLeft(2, '0')}';
+        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 
     return Container(
       decoration: BoxDecoration(
