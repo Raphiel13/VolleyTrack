@@ -214,17 +214,17 @@ class _StatsScreenState extends State<StatsScreen> {
                   child: IosCard(
                     child: Column(
                       children: [
-                        ('⚡', 'Asy', '14', AppColors.blue),
-                        ('🛡️', 'Bloki', '9', AppColors.orange),
-                        ('🤝', 'Przyjęcia', '38', AppColors.green),
-                        ('❌', 'Błędy', '7', AppColors.red),
+                        (Icons.bolt, 'Asy', '14', AppColors.blue),
+                        (Icons.shield_outlined, 'Bloki', '9', AppColors.orange),
+                        (Icons.sports_handball, 'Przyjęcia', '38', AppColors.green),
+                        (Icons.close_rounded, 'Błędy', '7', AppColors.red),
                       ].asMap().entries.map((e) {
-                        final (emoji, label, val, color) = e.value;
+                        final (icon, label, val, color) = e.value;
                         return Column(children: [
                           IosRow(
                             leading: SfIconBox(
-                              emoji: emoji,
-                              bgColor: t.label4.withOpacity(0.4),
+                              iconWidget: Icon(icon, size: 18, color: color),
+                              bgColor: color.withValues(alpha: 0.12),
                             ),
                             title: Text(label,
                                 style: AppTheme.inter(

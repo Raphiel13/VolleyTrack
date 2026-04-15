@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
@@ -150,7 +151,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ],
                         ),
                         child: const Center(
-                          child: Text('✏️', style: TextStyle(fontSize: 13)),
+                          child: Icon(CupertinoIcons.pencil, size: 14, color: AppColors.blue),
                         ),
                       ),
                     ),
@@ -348,10 +349,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         color: AppColors.blue.withOpacity(0.07),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Text(
-                        '💡 Wpływa na dopasowanie gier w wyszukiwarce',
-                        style: AppTheme.inter(
-                            fontSize: 12, color: AppColors.blue),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.lightbulb_outline,
+                              size: 14, color: AppColors.blue),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              'Wpływa na dopasowanie gier w wyszukiwarce',
+                              style: AppTheme.inter(
+                                  fontSize: 12, color: AppColors.blue),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -427,9 +437,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 12),
                   IosSegmentedControl<AppThemeMode>(
                     options: const [
-                      (AppThemeMode.light, '☀️ Jasny'),
+                      (AppThemeMode.light, 'Jasny'),
                       (AppThemeMode.system, 'Systemowy'),
-                      (AppThemeMode.dark, '🌙 Ciemny'),
+                      (AppThemeMode.dark, 'Ciemny'),
                     ],
                     selected: _themeMode,
                     onChanged: (v) {
@@ -459,7 +469,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Column(children: [
                   IosRow(
                     leading: SfIconBox(
-                        emoji: '📍', bgColor: AppColors.blue.withOpacity(0.12)),
+                        iconWidget: const Icon(CupertinoIcons.location_fill,
+                            size: 18, color: AppColors.blue),
+                        bgColor: AppColors.blue.withOpacity(0.12)),
                     title: Text('Nowe gry w okolicy',
                         style: AppTheme.inter(fontSize: 16, color: t.label)),
                     showChevron: false,
@@ -471,7 +483,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const IosSeparator(),
                   IosRow(
                     leading: SfIconBox(
-                        emoji: '👥', bgColor: AppColors.teal.withOpacity(0.12)),
+                        iconWidget: const Icon(CupertinoIcons.person_2_fill,
+                            size: 18, color: AppColors.teal),
+                        bgColor: AppColors.teal.withOpacity(0.12)),
                     title: Text('Zapisy grupowe',
                         style: AppTheme.inter(fontSize: 16, color: t.label)),
                     showChevron: false,
@@ -483,7 +497,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const IosSeparator(),
                   IosRow(
                     leading: SfIconBox(
-                        emoji: '📊',
+                        iconWidget: const Icon(Icons.bar_chart,
+                            size: 18, color: AppColors.orange),
                         bgColor: AppColors.orange.withOpacity(0.12)),
                     title: Text('Wyniki meczów',
                         style: AppTheme.inter(fontSize: 16, color: t.label)),
