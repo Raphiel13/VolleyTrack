@@ -8,9 +8,11 @@ final groupRepositoryProvider = Provider<GroupRepository>((ref) {
   return GroupRepository(FirebaseFirestore.instance);
 });
 
-/// Streams all groups ordered by name.
-final groupsProvider = StreamProvider<List<Group>>((ref) {
-  return ref.watch(groupRepositoryProvider).watchGroups();
+/// Streams groups where [userId] is in the members array.
+/// Usage: `ref.watch(userGroupsProvider('uid-here'))`
+final userGroupsProvider =
+    StreamProvider.family<List<Group>, String>((ref, userId) {
+  return ref.watch(groupRepositoryProvider).watchUserGroups(userId);
 });
 
 // ─── Repository ───────────────────────────────────────────────────────────────
@@ -23,12 +25,63 @@ class GroupRepository {
   CollectionReference<Map<String, dynamic>> get _groups =>
       _db.collection('groups');
 
-  /// Streams all group documents ordered alphabetically by name.
-  Stream<List<Group>> watchGroups() {
+  // ── Reads ──────────────────────────────────────────────────────────────────
+
+  /// Streams groups where [userId] appears in the `members` array,
+  /// ordered alphabetically by name.
+  Stream<List<Group>> watchUserGroups(String userId) {
     return _groups
+        .where('members', arrayContains: userId)
         .orderBy('name')
         .snapshots()
         .map((snap) => snap.docs.map(_fromDoc).toList());
+  }
+
+  // ── Writes ─────────────────────────────────────────────────────────────────
+
+  /// Creates a new group document. The creator is automatically added to
+  /// `members` and set as `adminId`.
+  Future<Group> createGroup({
+    required String name,
+    required String adminId,
+    bool isOpen = false,
+    String? nextGame,
+  }) async {
+    final doc = await _groups.add({
+      'name': name,
+      'adminId': adminId,
+      'members': [adminId],
+      'isOpen': isOpen,
+      'unreadCount': 0,
+      if (nextGame != null) 'nextGame': nextGame,
+    });
+
+    final snap = await doc.get();
+    return _fromDoc(snap);
+  }
+
+  /// Adds [userId] to the group's `members` array.
+  /// Throws [GroupNotFoundException] if the document does not exist.
+  /// Idempotent — safe to call if the user is already a member.
+  Future<void> joinGroup(String groupId, String userId) async {
+    await _db.runTransaction((tx) async {
+      final ref = _groups.doc(groupId);
+      final snap = await tx.get(ref);
+
+      if (!snap.exists) throw GroupNotFoundException(groupId);
+
+      tx.update(ref, {
+        'members': FieldValue.arrayUnion([userId]),
+      });
+    });
+  }
+
+  /// Removes [userId] from the group's `members` array.
+  /// Idempotent — safe to call if the user is not a member.
+  Future<void> leaveGroup(String groupId, String userId) async {
+    await _groups.doc(groupId).update({
+      'members': FieldValue.arrayRemove([userId]),
+    });
   }
 
   /// Marks the group as open/closed.
@@ -41,16 +94,32 @@ class GroupRepository {
     return _groups.doc(groupId).update({'nextGame': nextGame});
   }
 
+  // ── Mapping ────────────────────────────────────────────────────────────────
+
   static Group _fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data()!;
+
+    // `members` is stored as an array of userId strings; derive count from it.
+    final membersList = (d['members'] as List<dynamic>?) ?? [];
+
     return Group(
       id: doc.id,
       name: d['name'] as String,
-      members: (d['members'] as num? ?? 0).toInt(),
-      adminName: d['adminName'] as String? ?? '',
+      members: membersList.length,
+      adminName: d['adminId'] as String? ?? '',
       isOpen: d['isOpen'] as bool? ?? false,
       unreadCount: (d['unreadCount'] as num? ?? 0).toInt(),
       nextGame: d['nextGame'] as String?,
     );
   }
+}
+
+// ─── Exceptions ───────────────────────────────────────────────────────────────
+
+class GroupNotFoundException implements Exception {
+  final String groupId;
+  const GroupNotFoundException(this.groupId);
+
+  @override
+  String toString() => 'GroupNotFoundException: group $groupId not found';
 }
