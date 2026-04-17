@@ -197,8 +197,16 @@ class SfIconBox extends StatelessWidget {
 class UserAvatar extends StatelessWidget {
   final String name;
   final double size;
+  /// Optional solid background color. When null the default blue→teal
+  /// gradient is used.
+  final Color? color;
 
-  const UserAvatar({super.key, required this.name, this.size = 40});
+  const UserAvatar({
+    super.key,
+    required this.name,
+    this.size = 40,
+    this.color,
+  });
 
   String get _initials {
     final parts = name.trim().split(' ');
@@ -210,16 +218,20 @@ class UserAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bg = color;
     return Container(
       width: size,
       height: size,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.blue, AppColors.teal],
-        ),
+        color: bg,
+        gradient: bg == null
+            ? const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [AppColors.blue, AppColors.teal],
+              )
+            : null,
       ),
       child: Center(
         child: Text(

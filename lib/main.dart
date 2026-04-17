@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'firebase_options.dart';
 import 'repositories/auth_repository.dart';
+import 'repositories/user_repository.dart';
 import 'theme/app_theme.dart';
 import 'models/models.dart';
 import 'screens/login_screen.dart';
@@ -80,10 +81,19 @@ class _AuthGate extends ConsumerWidget {
       error: (_, __) => const LoginScreen(),
       data: (firebaseUser) {
         if (firebaseUser == null) return const LoginScreen();
-        final profile = UserProfile(
-          id: firebaseUser.uid,
-          name: firebaseUser.displayName ?? 'Gracz',
-        );
+
+        // Ensure users/{uid} doc exists (idempotent — no-op when already there).
+        ref.read(userRepositoryProvider).createUserProfile(firebaseUser);
+
+        // Stream the Firestore profile; fall back to Auth data while loading.
+        final profileAsync =
+            ref.watch(currentUserProfileProvider(firebaseUser.uid));
+        final profile = profileAsync.valueOrNull ??
+            UserProfile(
+              id: firebaseUser.uid,
+              name: firebaseUser.displayName ?? 'Gracz',
+            );
+
         return MainShell(user: profile, onUserChanged: onUserChanged);
       },
     );
