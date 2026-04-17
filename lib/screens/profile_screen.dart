@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../repositories/auth_repository.dart';
+import '../repositories/stats_repository.dart';
 import '../repositories/user_repository.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
@@ -176,12 +178,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 Text(_level.label,
                     style: AppTheme.inter(fontSize: 15, color: t.label2)),
                 const SizedBox(height: 12),
-                Row(
+                Builder(builder: (context) {
+                    final uid = ref
+                        .watch(authRepositoryProvider)
+                        .currentUser
+                        ?.uid ?? '';
+                    final stats =
+                        ref.watch(statsProvider(uid)).valueOrNull;
+                    final totalGames = stats?.totalGames ?? 0;
+                    final wins = stats?.wins ?? 0;
+                    final winPct = totalGames == 0
+                        ? '0%'
+                        : '${(wins / totalGames * 100).round()}%';
+                    return Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    ['24', 'Mecze'],
-                    ['16', 'W'],
-                    ['67%', 'Win%'],
+                    ['$totalGames', 'Mecze'],
+                    ['$wins', 'W'],
+                    [winPct, 'Win%'],
                   ].asMap().entries.map((e) {
                     return Row(children: [
                       if (e.key > 0)
@@ -205,7 +219,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ]),
                     ]);
                   }).toList(),
-                ),
+                ); }),
               ]),
             ),
           ),
