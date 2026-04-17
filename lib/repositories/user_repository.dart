@@ -56,9 +56,10 @@ class UserRepository {
         .map(_fromDoc);
   }
 
-  /// Overwrites mutable profile fields. Does not touch [createdAt] or [uid].
+  /// Overwrites mutable profile fields. Uses merge so a missing document
+  /// is created rather than causing an error.
   Future<void> updateUser(UserProfile profile) {
-    return _doc(profile.id).update(_toMap(profile));
+    return _doc(profile.id).set(_toMap(profile), SetOptions(merge: true));
   }
 
   // ─── Serialization ──────────────────────────────────────────────────────────
