@@ -1,10 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../repositories/user_repository.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
 import '../widgets/ios_widgets.dart';
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   final UserProfile user;
   final ValueChanged<UserProfile> onSave;
 
@@ -15,10 +17,10 @@ class ProfileScreen extends StatefulWidget {
   });
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   late TextEditingController _name;
   late TextEditingController _bio;
   late PlayerLevel _level;
@@ -48,13 +50,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _save() {
-    widget.onSave(widget.user.copyWith(
+    final updated = widget.user.copyWith(
       name: _name.text.trim(),
       bio: _bio.text.trim(),
       level: _level,
       positions: _positions,
       themeMode: _themeMode,
-    ));
+    );
+    widget.onSave(updated);
+    // Persist to Firestore (merge: true handles missing docs too).
+    ref.read(userRepositoryProvider).updateUser(updated);
     setState(() => _saved = true);
     Future.delayed(
       const Duration(seconds: 2),
