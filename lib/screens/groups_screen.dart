@@ -609,7 +609,8 @@ class _JoinByCodeSheetState extends ConsumerState<_JoinByCodeSheet> {
         ));
         setState(() => _loading = false);
       }
-    } catch (_) {
+    } catch (e) {
+        debugPrint('joinGroupByCode error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Wystąpił błąd, spróbuj ponownie',
