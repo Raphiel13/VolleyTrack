@@ -1,5 +1,8 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../repositories/game_repository.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
@@ -461,6 +464,25 @@ class _ListView extends StatelessWidget {
 
 // ── Map View ──────────────────────────────────────────────────────────────────
 
+// Warsaw city centre — used as the map origin until games have real coordinates.
+const _kWarsaw = LatLng(52.2297, 21.0122);
+
+// Degrees-per-km approximation at Warsaw's latitude (good enough for offsets).
+const _kLatPerKm = 0.009009;
+const _kLngPerKm = 0.01441;
+
+/// Returns a deterministic LatLng near Warsaw derived from [game.id.hashCode].
+LatLng _gameLatLng(NearbyGame game) {
+  final h = game.id.hashCode;
+  // Spread markers ±4 km around the centre.
+  final latOff = ((h & 0xFF) - 128) / 128.0 * 4 * _kLatPerKm;
+  final lngOff = (((h >> 8) & 0xFF) - 128) / 128.0 * 4 * _kLngPerKm;
+  return LatLng(_kWarsaw.latitude + latOff, _kWarsaw.longitude + lngOff);
+}
+
+/// Converts km radius to metres for the Circle widget.
+double _kmToMetres(double km) => km * 1000;
+
 class _MapView extends StatefulWidget {
   final List<NearbyGame> allGames;
   final List<NearbyGame> filteredGames;
@@ -481,15 +503,7 @@ class _MapView extends StatefulWidget {
 }
 
 class _MapViewState extends State<_MapView> {
-  NearbyGame? _pinSelected;
-
-  static const _positions = {
-    '1': (0.52, 0.48),
-    '2': (0.62, 0.36),
-    '3': (0.36, 0.58),
-    '4': (0.68, 0.66),
-    '5': (0.28, 0.30),
-  };
+  GoogleMapController? _mapCtrl;
 
   String _fmtKm(double v) => v < 1
       ? '${(v * 1000).round()} m'
@@ -497,251 +511,107 @@ class _MapViewState extends State<_MapView> {
           ? '${v.round()} km'
           : '${v.toStringAsFixed(1)} km';
 
-  // ── Pin bubble widget ────────────────────────────────────────────
-  Widget _buildPinBubble(NearbyGame g, bool isMatch, {required bool inRadius}) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: isMatch && inRadius ? AppColors.blue : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.15),
-                blurRadius: 8,
-              ),
-            ],
+  Set<Marker> _buildMarkers() {
+    return {
+      for (final g in widget.filteredGames)
+        Marker(
+          markerId: MarkerId(g.id),
+          position: _gameLatLng(g),
+          infoWindow: InfoWindow(
+            title: g.title,
+            snippet: g.location,
+            onTap: () => widget.onOpen(g),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                g.category == GameCategory.beach ? '🏖️' : '🏛️',
-                style: const TextStyle(fontSize: 13),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                g.title,
-                style: AppTheme.inter(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: isMatch && inRadius
-                      ? Colors.white
-                      : const Color(0xFF1C1C1E),
-                ),
-              ),
-            ],
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            g.matchesUser(widget.user)
+                ? BitmapDescriptor.hueAzure
+                : BitmapDescriptor.hueRed,
           ),
         ),
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: isMatch && inRadius ? AppColors.blue : Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.12),
-                blurRadius: 4,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+    };
+  }
+
+  Set<Circle> _buildCircle() {
+    return {
+      Circle(
+        circleId: const CircleId('search_radius'),
+        center: _kWarsaw,
+        radius: _kmToMetres(widget.radius),
+        fillColor: AppColors.blue.withValues(alpha: 0.08),
+        strokeColor: AppColors.blue.withValues(alpha: 0.40),
+        strokeWidth: 2,
+      ),
+    };
+  }
+
+  @override
+  void dispose() {
+    _mapCtrl?.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final rFrac = (widget.radius / 50.0).clamp(0.0, 1.0);
+    final t = AppTokens.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ── Map ───────────────────────────────────────────────────────────
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(22),
             child: SizedBox(
-              height: 240,
-              child: LayoutBuilder(builder: (ctx, constraints) {
-                final w = constraints.maxWidth;
-                final h = constraints.maxHeight;
-                final rPx = (rFrac * 100 + 20).clamp(20.0, 120.0);
-
-                return Stack(
-                  children: [
-                    // Background
-                    Container(color: const Color(0xFFE8F0E9)),
-                    // Grid
-                    CustomPaint(painter: _GridPainter(), size: Size(w, h)),
-                    // Roads
-                    CustomPaint(painter: _RoadsPainter(), size: Size(w, h)),
-
-                    // Radius ring
-                    Positioned(
-                      left: w * 0.52 - rPx,
-                      top: h * 0.52 - rPx,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 350),
-                        curve: Curves.elasticOut,
-                        width: rPx * 2,
-                        height: rPx * 2,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.blue.withOpacity(0.07),
-                          border: Border.all(
-                            color: AppColors.blue.withOpacity(0.35),
-                            width: 1.5,
-                          ),
-                        ),
+              height: 300,
+              child: Stack(
+                children: [
+                  GoogleMap(
+                    initialCameraPosition: const CameraPosition(
+                      target: _kWarsaw,
+                      zoom: 12,
+                    ),
+                    markers: _buildMarkers(),
+                    circles: _buildCircle(),
+                    onMapCreated: (c) => _mapCtrl = c,
+                    myLocationButtonEnabled: false,
+                    zoomControlsEnabled: false,
+                    mapToolbarEnabled: false,
+                    compassEnabled: false,
+                    gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+                      Factory<OneSequenceGestureRecognizer>(
+                        () => EagerGestureRecognizer(),
                       ),
-                    ),
+                    },
+                  ),
 
-                    // User dot
-                    Positioned(
-                      left: w * 0.52 - 9,
-                      top: h * 0.52 - 9,
-                      child: Container(
-                        width: 18,
-                        height: 18,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.blue,
-                          border: Border.all(color: Colors.white, width: 3),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.blue.withOpacity(0.4),
-                              blurRadius: 8,
-                              spreadRadius: 2,
-                            ),
-                          ],
+                  // Zoom buttons
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: Column(
+                      children: [
+                        _ZoomBtn(
+                          label: '+',
+                          onTap: () => _mapCtrl?.animateCamera(
+                              CameraUpdate.zoomIn()),
                         ),
-                      ),
-                    ),
-
-                    // Pins in radius – interactive
-                    ...widget.allGames
-                        .where((g) => widget.filteredGames.contains(g))
-                        .map((g) {
-                      final pos = _positions[g.id];
-                      if (pos == null) return const SizedBox();
-                      final isMatch = g.matchesUser(widget.user);
-                      return Positioned(
-                        left: w * pos.$1 - 40,
-                        top: h * pos.$2 - 36,
-                        child: GestureDetector(
-                          onTap: () => setState(() => _pinSelected =
-                              _pinSelected?.id == g.id ? null : g),
-                          child: _buildPinBubble(g, isMatch, inRadius: true),
+                        const SizedBox(height: 1),
+                        _ZoomBtn(
+                          label: '−',
+                          onTap: () => _mapCtrl?.animateCamera(
+                              CameraUpdate.zoomOut()),
                         ),
-                      );
-                    }),
-
-                    // Pins outside radius – non-interactive, greyed out
-                    ...widget.allGames
-                        .where((g) => !widget.filteredGames.contains(g))
-                        .map((g) {
-                      final pos = _positions[g.id];
-                      if (pos == null) return const SizedBox();
-                      return Positioned(
-                        left: w * pos.$1 - 40,
-                        top: h * pos.$2 - 36,
-                        child: IgnorePointer(
-                          child: Opacity(
-                            opacity: 0.25,
-                            child: ColorFiltered(
-                              colorFilter: const ColorFilter.matrix([
-                                0.2126,
-                                0.7152,
-                                0.0722,
-                                0,
-                                0,
-                                0.2126,
-                                0.7152,
-                                0.0722,
-                                0,
-                                0,
-                                0.2126,
-                                0.7152,
-                                0.0722,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                1,
-                                0,
-                              ]),
-                              child: _buildPinBubble(g, false, inRadius: false),
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-
-                    // Radius label
-                    Positioned(
-                      bottom: 12,
-                      left: 0,
-                      right: 0,
-                      child: Center(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.9),
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.08),
-                                blurRadius: 8,
-                              ),
-                            ],
-                          ),
-                          child: Text(
-                            '⬤ ${_fmtKm(widget.radius)}',
-                            style: AppTheme.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.blue,
-                            ),
-                          ),
-                        ),
-                      ),
+                      ],
                     ),
-
-                    // Zoom buttons
-                    const Positioned(
-                      top: 12,
-                      right: 12,
-                      child: Column(children: [
-                        _ZoomBtn('+'),
-                        SizedBox(height: 1),
-                        _ZoomBtn('−'),
-                      ]),
-                    ),
-                  ],
-                );
-              }),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
 
-        // Selected pin card
-        if (_pinSelected != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-            child: GameCard(
-              game: _pinSelected!,
-              isMatch: _pinSelected!.matchesUser(widget.user),
-              onTap: () => widget.onOpen(_pinSelected!),
-            ),
-          ),
-
-        // Count label
+        // ── Count label ───────────────────────────────────────────────────
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
           child: Text(
@@ -749,12 +619,12 @@ class _MapViewState extends State<_MapView> {
             style: AppTheme.inter(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: AppTokens.of(context).label2,
+              color: t.label2,
             ),
           ),
         ),
 
-        // List below map
+        // ── List below map ────────────────────────────────────────────────
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
           child: Column(
@@ -779,96 +649,37 @@ class _MapViewState extends State<_MapView> {
 
 class _ZoomBtn extends StatelessWidget {
   final String label;
-  const _ZoomBtn(this.label);
+  final VoidCallback onTap;
+  const _ZoomBtn({required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.92),
-        borderRadius: BorderRadius.circular(0),
-      ),
-      child: Center(
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w300,
-            color: Color(0xFF1C1C1E),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 6,
+            ),
+          ],
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w300,
+              color: Color(0xFF1C1C1E),
+            ),
           ),
         ),
       ),
     );
   }
-}
-
-// ── Custom Painters ───────────────────────────────────────────────────────────
-
-class _GridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = Colors.black.withOpacity(0.04)
-      ..strokeWidth = 1;
-    for (double x = 0; x < size.width; x += 28) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), p);
-    }
-    for (double y = 0; y < size.height; y += 28) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), p);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_) => false;
-}
-
-class _RoadsPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final road = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    road
-      ..color = Colors.white.withOpacity(0.9)
-      ..strokeWidth = 10;
-    canvas.drawPath(
-      Path()
-        ..moveTo(0, size.height * 0.50)
-        ..quadraticBezierTo(size.width * 0.4, size.height * 0.33,
-            size.width * 0.6, size.height * 0.50)
-        ..quadraticBezierTo(size.width * 0.8, size.height * 0.65, size.width,
-            size.height * 0.44),
-      road,
-    );
-
-    road
-      ..color = Colors.white.withOpacity(0.8)
-      ..strokeWidth = 7;
-    canvas.drawPath(
-      Path()
-        ..moveTo(0, size.height * 0.70)
-        ..quadraticBezierTo(size.width * 0.3, size.height * 0.78,
-            size.width * 0.6, size.height * 0.62)
-        ..quadraticBezierTo(size.width * 0.8, size.height * 0.55, size.width,
-            size.height * 0.70),
-      road,
-    );
-
-    road
-      ..color = Colors.white.withOpacity(0.85)
-      ..strokeWidth = 9;
-    canvas.drawPath(
-      Path()
-        ..moveTo(size.width * 0.43, 0)
-        ..quadraticBezierTo(size.width * 0.46, size.height * 0.45,
-            size.width * 0.50, size.height),
-      road,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_) => false;
 }
