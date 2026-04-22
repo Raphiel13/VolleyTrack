@@ -85,6 +85,8 @@ class NearbyGame {
   final double distanceKm;
   final String organizerName;
   final double organizerRating;
+  final double latitude;
+  final double longitude;
 
   const NearbyGame({
     required this.id,
@@ -98,6 +100,8 @@ class NearbyGame {
     required this.distanceKm,
     this.organizerName = 'Marek K.',
     this.organizerRating = 4.9,
+    this.latitude = 52.2297,
+    this.longitude = 21.0122,
   });
 
   int get spotsLeft => spotsTotal - spotsTaken;
@@ -118,8 +122,9 @@ class NearbyGame {
       spotsTaken: d['spotsTaken'] as int,
       organizerName: d['organizerName'] as String? ?? '',
       organizerRating: (d['organizerRating'] as num?)?.toDouble() ?? 0.0,
-      // distanceKm is computed from device location, not stored in Firestore
       distanceKm: 0.0,
+      latitude: (d['latitude'] as num?)?.toDouble() ?? 52.2297,
+      longitude: (d['longitude'] as num?)?.toDouble() ?? 21.0122,
     );
   }
 

@@ -3,11 +3,15 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_places_flutter/google_places_flutter.dart';
+import 'package:google_places_flutter/model/prediction.dart';
 import '../repositories/auth_repository.dart';
 import '../repositories/group_repository.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
 import '../widgets/ios_widgets.dart';
+
+const _kPlacesApiKey = 'AIzaSyBFNGEn6GS7NpyNbAskDYCesfzxNQPu9iM';
 
 // ─── Local models ─────────────────────────────────────────────────────────────
 
@@ -1537,10 +1541,13 @@ class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
                     fontWeight: FontWeight.w500,
                     color: t.label2)),
             const SizedBox(height: 6),
-            TextFormField(
-              controller: _locationCtrl,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: InputDecoration(
+            GooglePlaceAutoCompleteTextField(
+              textEditingController: _locationCtrl,
+              googleAPIKey: _kPlacesApiKey,
+              debounceTime: 400,
+              isLatLngRequired: false,
+              textStyle: AppTheme.inter(fontSize: 15, color: t.label),
+              inputDecoration: InputDecoration(
                 hintText: 'np. Hala sportowa, ul. Sportowa 1',
                 hintStyle: AppTheme.inter(color: t.label4),
                 filled: true,
@@ -1559,12 +1566,42 @@ class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
                 contentPadding: const EdgeInsets.symmetric(
                     horizontal: 14, vertical: 12),
               ),
-              style: AppTheme.inter(fontSize: 15, color: t.label),
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) {
-                  return 'Podaj lokalizację';
-                }
-                return null;
+              boxDecoration: BoxDecoration(
+                color: t.bg,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              seperatedBuilder: Divider(height: 0.5, color: t.separator),
+              itemBuilder: (ctx, index, prediction) => Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 12),
+                color: Colors.transparent,
+                child: Row(children: [
+                  Icon(CupertinoIcons.location,
+                      size: 14, color: t.label3),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      prediction.description ?? '',
+                      style: AppTheme.inter(
+                          fontSize: 14, color: t.label),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ]),
+              ),
+              itemClick: (Prediction prediction) {
+                _locationCtrl.text = prediction.description ?? '';
+                _locationCtrl.selection = TextSelection.fromPosition(
+                  TextPosition(offset: _locationCtrl.text.length),
+                );
               },
             ),
             const SizedBox(height: 28),

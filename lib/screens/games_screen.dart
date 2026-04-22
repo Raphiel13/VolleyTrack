@@ -467,18 +467,9 @@ class _ListView extends StatelessWidget {
 // Warsaw city centre — used as the map origin until games have real coordinates.
 const _kWarsaw = LatLng(52.2297, 21.0122);
 
-// Degrees-per-km approximation at Warsaw's latitude (good enough for offsets).
-const _kLatPerKm = 0.009009;
-const _kLngPerKm = 0.01441;
 
-/// Returns a deterministic LatLng near Warsaw derived from [game.id.hashCode].
-LatLng _gameLatLng(NearbyGame game) {
-  final h = game.id.hashCode;
-  // Spread markers ±4 km around the centre.
-  final latOff = ((h & 0xFF) - 128) / 128.0 * 4 * _kLatPerKm;
-  final lngOff = (((h >> 8) & 0xFF) - 128) / 128.0 * 4 * _kLngPerKm;
-  return LatLng(_kWarsaw.latitude + latOff, _kWarsaw.longitude + lngOff);
-}
+LatLng _gameLatLng(NearbyGame game) =>
+    LatLng(game.latitude, game.longitude);
 
 /// Converts km radius to metres for the Circle widget.
 double _kmToMetres(double km) => km * 1000;
@@ -504,6 +495,16 @@ class _MapView extends StatefulWidget {
 
 class _MapViewState extends State<_MapView> {
   GoogleMapController? _mapCtrl;
+  LatLng _searchCenter = _kWarsaw;
+  LatLng _cameraCenter = _kWarsaw;
+
+  // Show the button only when the camera has drifted meaningfully from
+  // the current search center (~100 m threshold avoids noise from zoom).
+  bool get _showSearchHere {
+    final dlat = (_cameraCenter.latitude - _searchCenter.latitude).abs();
+    final dlng = (_cameraCenter.longitude - _searchCenter.longitude).abs();
+    return dlat > 0.001 || dlng > 0.001;
+  }
 
   String _fmtKm(double v) => v < 1
       ? '${(v * 1000).round()} m'
@@ -535,13 +536,17 @@ class _MapViewState extends State<_MapView> {
     return {
       Circle(
         circleId: const CircleId('search_radius'),
-        center: _kWarsaw,
+        center: _searchCenter,
         radius: _kmToMetres(widget.radius),
         fillColor: AppColors.blue.withValues(alpha: 0.08),
         strokeColor: AppColors.blue.withValues(alpha: 0.40),
         strokeWidth: 2,
       ),
     };
+  }
+
+  void _applySearchHere() {
+    setState(() => _searchCenter = _cameraCenter);
   }
 
   @override
@@ -574,6 +579,9 @@ class _MapViewState extends State<_MapView> {
                     markers: _buildMarkers(),
                     circles: _buildCircle(),
                     onMapCreated: (c) => _mapCtrl = c,
+                    onCameraMove: (pos) {
+                      setState(() => _cameraCenter = pos.target);
+                    },
                     myLocationButtonEnabled: false,
                     zoomControlsEnabled: false,
                     mapToolbarEnabled: false,
@@ -584,6 +592,50 @@ class _MapViewState extends State<_MapView> {
                       ),
                     },
                   ),
+
+                  // 'Szukaj w tym obszarze' button
+                  if (_showSearchHere)
+                    Positioned(
+                      top: 12,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: GestureDetector(
+                          onTap: _applySearchHere,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 9),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.95),
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.14),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.search,
+                                    size: 15, color: AppColors.blue),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Szukaj w tym obszarze',
+                                  style: AppTheme.inter(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.blue,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
 
                   // Zoom buttons
                   Positioned(
