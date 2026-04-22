@@ -1,6 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import '../repositories/auth_repository.dart';
 import '../repositories/stats_repository.dart';
 import '../repositories/user_repository.dart';
@@ -30,6 +33,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   late AppThemeMode _themeMode;
   bool _saving = false;
   bool _saved = false;
+  bool _uploadingPhoto = false;
+  String? _photoUrl;
   // Prevents overwriting in-progress edits when the Firestore stream re-emits.
   bool _initialized = false;
 
@@ -61,7 +66,101 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _level = profile.level;
     _positions = List.from(profile.positions);
     _themeMode = profile.themeMode;
+    _photoUrl = profile.photoUrl;
     _initialized = true;
+  }
+
+  Future<void> _pickAndUploadPhoto(ImageSource source) async {
+    final uid = ref.read(authRepositoryProvider).currentUser?.uid ?? '';
+    if (uid.isEmpty) return;
+
+    final picker = ImagePicker();
+    final file = await picker.pickImage(source: source, imageQuality: 85);
+    if (file == null) return;
+
+    setState(() => _uploadingPhoto = true);
+    try {
+      final ref_ = FirebaseStorage.instance
+          .ref()
+          .child('users/$uid/profile.jpg');
+      await ref_.putData(
+        await file.readAsBytes(),
+        SettableMetadata(contentType: 'image/jpeg'),
+      );
+      final url = await ref_.getDownloadURL();
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .update({'photoUrl': url});
+
+      if (mounted) setState(() => _photoUrl = url);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Nie udało się przesłać zdjęcia',
+              style: AppTheme.inter()),
+          backgroundColor: AppColors.red,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingPhoto = false);
+    }
+  }
+
+  void _showPhotoSheet(BuildContext context) {
+    final t = AppTokens.of(context);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: BoxDecoration(
+          color: t.bg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: EdgeInsets.fromLTRB(
+            20, 16, 20, MediaQuery.of(context).padding.bottom + 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                    color: t.separator,
+                    borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(CupertinoIcons.camera_fill,
+                  color: AppColors.blue),
+              title: Text('Zrób zdjęcie',
+                  style: AppTheme.inter(fontSize: 16, color: t.label)),
+              onTap: () {
+                Navigator.pop(context);
+                _pickAndUploadPhoto(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(CupertinoIcons.photo_fill_on_rectangle_fill,
+                  color: AppColors.blue),
+              title: Text('Wybierz z galerii',
+                  style: AppTheme.inter(fontSize: 16, color: t.label)),
+              onTap: () {
+                Navigator.pop(context);
+                _pickAndUploadPhoto(ImageSource.gallery);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _save() async {
@@ -135,66 +234,70 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
               padding: const EdgeInsets.only(top: 20, bottom: 16),
               child: Column(children: [
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Container(
-                      width: 88,
-                      height: 88,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [AppColors.blue, AppColors.teal],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(0x59007AFF),
-                            blurRadius: 20,
-                            offset: Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          _name.text
-                              .split(' ')
-                              .map((n) => n.isNotEmpty ? n[0] : '')
-                              .take(2)
-                              .join()
-                              .toUpperCase(),
-                          style: AppTheme.inter(
-                            fontSize: 32,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: -4,
-                      child: Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          color: t.bg2,
+                GestureDetector(
+                  onTap: () => _showPhotoSheet(context),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: 88,
+                        height: 88,
+                        decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: t.separator),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 6,
+                              color: Color(0x59007AFF),
+                              blurRadius: 20,
+                              offset: Offset(0, 4),
                             ),
                           ],
                         ),
-                        child: const Center(
-                          child: Icon(CupertinoIcons.pencil, size: 14, color: AppColors.blue),
+                        child: _uploadingPhoto
+                            ? Container(
+                                width: 88,
+                                height: 88,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppColors.blue.withValues(alpha: 0.2),
+                                ),
+                                child: const Center(
+                                  child: CircularProgressIndicator(
+                                    color: AppColors.blue,
+                                    strokeWidth: 2.5,
+                                  ),
+                                ),
+                              )
+                            : UserAvatar(
+                                name: _name.text,
+                                size: 88,
+                                photoUrl: _photoUrl,
+                              ),
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        right: -4,
+                        child: Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: t.bg2,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: t.separator),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                          child: const Center(
+                            child: Icon(CupertinoIcons.pencil,
+                                size: 14, color: AppColors.blue),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
