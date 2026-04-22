@@ -40,7 +40,7 @@ class VolleyManagerApp extends StatefulWidget {
 }
 
 class _VolleyManagerAppState extends State<VolleyManagerApp> {
-  UserProfile _user = MockData.user;
+  UserProfile _user = const UserProfile(id: '', name: '');
 
   ThemeMode get _themeMode => switch (_user.themeMode) {
         AppThemeMode.light => ThemeMode.light,
@@ -74,26 +74,23 @@ class _AuthGate extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // First check auth state — redirect to login when signed out.
     final authState = ref.watch(authStateProvider);
+    if (authState.isLoading) return const _SplashScreen();
+    if (authState.hasError) return const LoginScreen();
+    final firebaseUser = authState.valueOrNull;
+    if (firebaseUser == null) return const LoginScreen();
 
-    return authState.when(
+    // Ensure users/{uid} doc exists (idempotent — no-op when already there).
+    ref.read(userRepositoryProvider).createUserProfile(firebaseUser);
+
+    // Watch the Firestore profile via currentUserProvider.
+    final profileAsync = ref.watch(currentUserProvider);
+    return profileAsync.when(
       loading: () => const _SplashScreen(),
       error: (_, __) => const LoginScreen(),
-      data: (firebaseUser) {
-        if (firebaseUser == null) return const LoginScreen();
-
-        // Ensure users/{uid} doc exists (idempotent — no-op when already there).
-        ref.read(userRepositoryProvider).createUserProfile(firebaseUser);
-
-        // Stream the Firestore profile; fall back to Auth data while loading.
-        final profileAsync =
-            ref.watch(currentUserProfileProvider(firebaseUser.uid));
-        final profile = profileAsync.valueOrNull ??
-            UserProfile(
-              id: firebaseUser.uid,
-              name: firebaseUser.displayName ?? 'Gracz',
-            );
-
+      data: (profile) {
+        if (profile == null) return const _SplashScreen();
         return MainShell(user: profile, onUserChanged: onUserChanged);
       },
     );
