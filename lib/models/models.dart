@@ -40,6 +40,7 @@ class UserProfile {
   final PlayerLevel level;
   final List<PlayerPosition> positions;
   final AppThemeMode themeMode;
+  final String? photoUrl;
 
   const UserProfile({
     required this.id,
@@ -48,6 +49,7 @@ class UserProfile {
     this.level = PlayerLevel.recreational,
     this.positions = const [],
     this.themeMode = AppThemeMode.system,
+    this.photoUrl,
   });
 
   UserProfile copyWith({
@@ -56,6 +58,7 @@ class UserProfile {
     PlayerLevel? level,
     List<PlayerPosition>? positions,
     AppThemeMode? themeMode,
+    String? photoUrl,
   }) =>
       UserProfile(
         id: id,
@@ -64,6 +67,7 @@ class UserProfile {
         level: level ?? this.level,
         positions: positions ?? this.positions,
         themeMode: themeMode ?? this.themeMode,
+        photoUrl: photoUrl ?? this.photoUrl,
       );
 }
 

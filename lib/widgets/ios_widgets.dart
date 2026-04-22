@@ -197,15 +197,15 @@ class SfIconBox extends StatelessWidget {
 class UserAvatar extends StatelessWidget {
   final String name;
   final double size;
-  /// Optional solid background color. When null the default blue→teal
-  /// gradient is used.
   final Color? color;
+  final String? photoUrl;
 
   const UserAvatar({
     super.key,
     required this.name,
     this.size = 40,
     this.color,
+    this.photoUrl,
   });
 
   String get _initials {
@@ -218,6 +218,21 @@ class UserAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (photoUrl != null && photoUrl!.isNotEmpty) {
+      return ClipOval(
+        child: Image.network(
+          photoUrl!,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _initialsWidget(),
+        ),
+      );
+    }
+    return _initialsWidget();
+  }
+
+  Widget _initialsWidget() {
     final bg = color;
     return Container(
       width: size,

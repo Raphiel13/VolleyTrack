@@ -116,6 +116,7 @@ class UserRepository {
           .map((s) => _parseEnum(PlayerPosition.values, s))
           .toList(),
       themeMode: _parseEnum(AppThemeMode.values, d['themeMode'] as String?),
+      photoUrl: d['photoUrl'] as String?,
     );
   }
 
@@ -125,6 +126,7 @@ class UserRepository {
         'level': p.level.name,
         'positions': p.positions.map((pos) => pos.name).toList(),
         'themeMode': p.themeMode.name,
+        if (p.photoUrl != null) 'photoUrl': p.photoUrl,
       };
 
   T _parseEnum<T extends Enum>(List<T> values, String? name) {
