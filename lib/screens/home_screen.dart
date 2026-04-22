@@ -88,26 +88,59 @@ class HomeScreen extends ConsumerWidget {
             const SizedBox(height: 12),
 
             // ── Quick stats ──────────────────────────────────────────────
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  _QuickStat(
-                    Icon(Icons.local_fire_department,
-                        size: 20, color: AppColors.orange),
-                    '5 W', 'Seria'),
-                  SizedBox(width: 10),
-                  _QuickStat(
-                    Icon(Icons.bolt, size: 20, color: AppColors.blue),
-                    '2.3', 'Asy/mecz'),
-                  SizedBox(width: 10),
-                  _QuickStat(
-                    Icon(Icons.location_on,
-                        size: 20, color: AppColors.red),
-                    '1.2 km', 'Najbliższa'),
-                ],
-              ),
-            ),
+            Builder(builder: (context) {
+              final matchesAsync = ref.watch(matchesProvider(uid));
+
+              // Win streak: count consecutive wins from newest match.
+              final streak = matchesAsync.whenOrNull(
+                data: (matches) {
+                  int s = 0;
+                  for (final m in matches) {
+                    if (m.isWin) { s++; } else { break; }
+                  }
+                  return s;
+                },
+              );
+
+              // Aces per match.
+              final acesPerGame = stats.totalGames == 0
+                  ? null
+                  : stats.totalAces / stats.totalGames;
+
+              String streakLabel() {
+                if (streak == null) return '–';
+                return streak == 0 ? '0 W' : '$streak W';
+              }
+
+              String acesLabel() {
+                if (acesPerGame == null) return '–';
+                return acesPerGame == acesPerGame.roundToDouble()
+                    ? '${acesPerGame.round()}'
+                    : acesPerGame.toStringAsFixed(1);
+              }
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    _QuickStat(
+                      const Icon(Icons.local_fire_department,
+                          size: 20, color: AppColors.orange),
+                      streakLabel(), 'Seria'),
+                    const SizedBox(width: 10),
+                    _QuickStat(
+                      const Icon(Icons.bolt,
+                          size: 20, color: AppColors.blue),
+                      acesLabel(), 'Asy/mecz'),
+                    const SizedBox(width: 10),
+                    const _QuickStat(
+                      Icon(Icons.location_on,
+                          size: 20, color: AppColors.red),
+                      '–', 'Najbliższa'),
+                  ],
+                ),
+              );
+            }),
             const SizedBox(height: 20),
 
             // ── Nearest games ────────────────────────────────────────────
@@ -530,17 +563,30 @@ class _GroupTile extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Flexible(
-                        child: Text(
-                          group.isOpen
-                              ? 'Zapisy otwarte'
-                              : '${group.nextGame}',
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTheme.inter(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: group.isOpen ? AppColors.green : t.label3,
-                          ),
-                        ),
+                        child: Builder(builder: (context) {
+                          final String label;
+                          final Color color;
+                          if (group.isOpen) {
+                            label = 'Zapisy otwarte';
+                            color = AppColors.green;
+                          } else if (group.nextGame == null ||
+                              group.nextGame!.isEmpty) {
+                            label = 'Brak gier';
+                            color = t.label3;
+                          } else {
+                            label = group.nextGame!;
+                            color = t.label3;
+                          }
+                          return Text(
+                            label,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTheme.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: color,
+                            ),
+                          );
+                        }),
                       ),
                     ],
                   ),
