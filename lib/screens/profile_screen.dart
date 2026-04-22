@@ -702,7 +702,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               child: SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
-                  onPressed: () {},
+                  onPressed: () async {
+                    await ref.read(authRepositoryProvider).signOut();
+                  },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.red,
                     side: BorderSide(color: AppColors.red.withOpacity(0.3)),
