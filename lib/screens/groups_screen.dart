@@ -72,8 +72,10 @@ class GroupsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final uid = ref.watch(authRepositoryProvider).currentUser?.uid;
+    if (uid == null || uid.isEmpty) return const SizedBox.shrink();
+
     final t = AppTokens.of(context);
-    final uid = ref.watch(authRepositoryProvider).currentUser?.uid ?? '';
     final groupsAsync = ref.watch(userGroupsProvider(uid));
 
     return CustomScrollView(
@@ -983,9 +985,6 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  String _fmt(DateTime dt) => '${dt.hour.toString().padLeft(2, '0')}:'
-      '${dt.minute.toString().padLeft(2, '0')}';
-
   @override
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
@@ -1090,9 +1089,9 @@ class _MessageBubble extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: AppColors.green.withOpacity(0.10),
+          color: AppColors.green.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.green.withOpacity(0.2)),
+          border: Border.all(color: AppColors.green.withValues(alpha: 0.2)),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1151,7 +1150,7 @@ class _MessageBubble extends StatelessWidget {
                       ? null
                       : [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.06),
+                            color: Colors.black.withValues(alpha: 0.06),
                             blurRadius: 4,
                             offset: const Offset(0, 1),
                           ),
