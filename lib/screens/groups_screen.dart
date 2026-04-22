@@ -61,12 +61,12 @@ class GroupsScreen extends ConsumerWidget {
 
   const GroupsScreen({super.key, required this.onOpenChat});
 
-  void _showCreateSheet(BuildContext context) {
+  void _showNewGroupSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const _CreateGroupSheet(),
+      builder: (_) => const _NewGroupChoiceSheet(),
     );
   }
 
@@ -99,7 +99,7 @@ class GroupsScreen extends ConsumerWidget {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 6),
                     child: TextButton(
-                      onPressed: () => _showCreateSheet(context),
+                      onPressed: () => _showNewGroupSheet(context),
                       style: TextButton.styleFrom(
                         backgroundColor: AppColors.blue,
                         foregroundColor: Colors.white,
@@ -423,6 +423,303 @@ class _GroupRow extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+// ─── New Group Choice Sheet ───────────────────────────────────────────────────
+
+class _NewGroupChoiceSheet extends StatelessWidget {
+  const _NewGroupChoiceSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTokens.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: t.bg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+          20, 16, 20, MediaQuery.of(context).padding.bottom + 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: t.separator,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Nowa grupa',
+            style: AppTheme.inter(
+                fontSize: 18, fontWeight: FontWeight.w700, color: t.label),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          _ChoiceButton(
+            icon: CupertinoIcons.person_2_fill,
+            title: 'Utwórz nową grupę',
+            subtitle: 'Załóż grupę i zaproś innych',
+            onTap: () {
+              Navigator.pop(context);
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => const _CreateGroupSheet(),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          _ChoiceButton(
+            icon: CupertinoIcons.link,
+            title: 'Dołącz przez kod',
+            subtitle: 'Wpisz 6-znakowy kod zaproszenia',
+            onTap: () {
+              Navigator.pop(context);
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => const _JoinByCodeSheet(),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChoiceButton extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _ChoiceButton({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTokens.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: t.bg2,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: t.separator, width: 0.5),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.blue.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, size: 22, color: AppColors.blue),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: AppTheme.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: t.label)),
+                  const SizedBox(height: 2),
+                  Text(subtitle,
+                      style: AppTheme.inter(fontSize: 13, color: t.label2)),
+                ],
+              ),
+            ),
+            Icon(CupertinoIcons.chevron_right, size: 16, color: t.label3),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Join By Code Sheet ───────────────────────────────────────────────────────
+
+class _JoinByCodeSheet extends ConsumerStatefulWidget {
+  const _JoinByCodeSheet();
+
+  @override
+  ConsumerState<_JoinByCodeSheet> createState() => _JoinByCodeSheetState();
+}
+
+class _JoinByCodeSheetState extends ConsumerState<_JoinByCodeSheet> {
+  final _codeCtrl = TextEditingController();
+  bool _loading = false;
+
+  @override
+  void dispose() {
+    _codeCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _join() async {
+    final code = _codeCtrl.text.trim().toUpperCase();
+    if (code.length != 6) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Kod musi mieć 6 znaków', style: AppTheme.inter()),
+        backgroundColor: AppColors.red,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ));
+      return;
+    }
+
+    setState(() => _loading = true);
+    final uid = ref.read(authRepositoryProvider).currentUser?.uid ?? '';
+    try {
+      await ref.read(groupRepositoryProvider).joinGroupByCode(code, uid);
+      if (mounted) Navigator.pop(context);
+    } on GroupNotFoundException {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content:
+              Text('Nie znaleziono grupy z tym kodem', style: AppTheme.inter()),
+          backgroundColor: AppColors.red,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ));
+        setState(() => _loading = false);
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Wystąpił błąd, spróbuj ponownie',
+              style: AppTheme.inter()),
+          backgroundColor: AppColors.red,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ));
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTokens.of(context);
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: t.bg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, bottomInset + 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: t.separator,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Dołącz przez kod',
+            style: AppTheme.inter(
+                fontSize: 18, fontWeight: FontWeight.w700, color: t.label),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          Text('Kod zaproszenia',
+              style: AppTheme.inter(
+                  fontSize: 13, fontWeight: FontWeight.w500, color: t.label2)),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _codeCtrl,
+            autofocus: true,
+            textCapitalization: TextCapitalization.characters,
+            maxLength: 6,
+            textAlign: TextAlign.center,
+            style: AppTheme.inter(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: t.label,
+                letterSpacing: 8),
+            decoration: InputDecoration(
+              hintText: 'XXXXXX',
+              hintStyle: AppTheme.inter(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: t.label4,
+                  letterSpacing: 8),
+              counterText: '',
+              filled: true,
+              fillColor: t.bg2,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.blue, width: 1.5),
+              ),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            height: 50,
+            child: ElevatedButton(
+              onPressed: _loading ? null : _join,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.blue,
+                disabledBackgroundColor: AppColors.blue.withValues(alpha: 0.5),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+                elevation: 0,
+              ),
+              child: _loading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2.5),
+                    )
+                  : Text('Dołącz',
+                      style: AppTheme.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white)),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
