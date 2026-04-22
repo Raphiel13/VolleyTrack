@@ -28,7 +28,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   late PlayerLevel _level;
   late List<PlayerPosition> _positions;
   late AppThemeMode _themeMode;
+  bool _saving = false;
   bool _saved = false;
+  // Prevents overwriting in-progress edits when the Firestore stream re-emits.
+  bool _initialized = false;
 
   bool _notifGames = true;
   bool _notifGroups = true;
@@ -37,6 +40,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   void initState() {
     super.initState();
+    // Use the prop as an immediate placeholder while Firestore loads.
     _name = TextEditingController(text: widget.user.name);
     _bio = TextEditingController(text: widget.user.bio);
     _level = widget.user.level;
@@ -51,22 +55,41 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     super.dispose();
   }
 
-  void _save() {
-    final updated = widget.user.copyWith(
+  void _populateFrom(UserProfile profile) {
+    _name.text = profile.name;
+    _bio.text = profile.bio;
+    _level = profile.level;
+    _positions = List.from(profile.positions);
+    _themeMode = profile.themeMode;
+    _initialized = true;
+  }
+
+  Future<void> _save() async {
+    final uid = ref.read(authRepositoryProvider).currentUser?.uid ?? '';
+    if (uid.isEmpty) return;
+
+    final updated = UserProfile(
+      id: uid,
       name: _name.text.trim(),
       bio: _bio.text.trim(),
       level: _level,
       positions: _positions,
       themeMode: _themeMode,
     );
-    widget.onSave(updated);
-    // Persist to Firestore (merge: true handles missing docs too).
-    ref.read(userRepositoryProvider).updateUser(updated);
-    setState(() => _saved = true);
-    Future.delayed(
-      const Duration(seconds: 2),
-      () => setState(() => _saved = false),
-    );
+
+    setState(() => _saving = true);
+    try {
+      await ref.read(userRepositoryProvider).saveUser(updated);
+      widget.onSave(updated);
+      if (!mounted) return;
+      setState(() { _saving = false; _saved = true; });
+      Future.delayed(
+        const Duration(seconds: 2),
+        () { if (mounted) setState(() => _saved = false); },
+      );
+    } catch (_) {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   void _togglePos(PlayerPosition p) {
@@ -82,6 +105,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
+
+    // Populate form from Firestore on first successful load.
+    ref.listen<AsyncValue<UserProfile?>>(currentUserProvider, (_, next) {
+      final profile = next.valueOrNull;
+      if (profile != null && !_initialized) {
+        setState(() => _populateFrom(profile));
+      }
+    });
+
     final levelIdx = PlayerLevel.values.indexOf(_level);
 
     return CustomScrollView(
@@ -540,13 +572,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
                   child: ElevatedButton(
-                    key: ValueKey(_saved),
-                    onPressed: _save,
+                    key: ValueKey(_saving ? 'saving' : _saved ? 'saved' : 'idle'),
+                    onPressed: _saving ? null : _save,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          _saved ? AppColors.green : AppColors.blue,
+                      backgroundColor: _saved ? AppColors.green : AppColors.blue,
                     ),
-                    child: Text(_saved ? '✓ Zapisano!' : 'Zapisz profil'),
+                    child: _saving
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.5,
+                            ),
+                          )
+                        : Text(_saved ? '✓ Zapisano!' : 'Zapisz profil'),
                   ),
                 ),
               ),
