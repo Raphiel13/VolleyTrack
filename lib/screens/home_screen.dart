@@ -25,9 +25,11 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final uid = ref.watch(authRepositoryProvider).currentUser?.uid;
+    if (uid == null || uid.isEmpty) return const SizedBox.shrink();
+
     final t = AppTokens.of(context);
     final gamesAsync = ref.watch(openGamesProvider);
-    final uid = ref.watch(authRepositoryProvider).currentUser?.uid ?? '';
     final stats = ref.watch(statsProvider(uid)).valueOrNull ?? UserStats.empty;
     final groupsAsync = ref.watch(userGroupsProvider(uid));
 

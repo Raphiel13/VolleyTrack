@@ -1,10 +1,14 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'firebase_options.dart';
 import 'repositories/auth_repository.dart';
+import 'repositories/game_repository.dart';
+import 'repositories/group_repository.dart';
+import 'repositories/stats_repository.dart';
 import 'repositories/user_repository.dart';
 import 'theme/app_theme.dart';
 import 'models/models.dart';
@@ -74,6 +78,20 @@ class _AuthGate extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Invalidate all uid-scoped providers whenever the signed-in user changes
+    // (sign-out, sign-in as a different account, token refresh with new uid).
+    ref.listen<AsyncValue<User?>>(authStateProvider, (previous, next) {
+      final prevUid = previous?.valueOrNull?.uid;
+      final nextUid = next.valueOrNull?.uid;
+      if (prevUid != nextUid) {
+        ref.invalidate(currentUserProvider);
+        ref.invalidate(userGroupsProvider);
+        ref.invalidate(statsProvider);
+        ref.invalidate(matchesProvider);
+        ref.invalidate(openGamesProvider);
+      }
+    });
+
     // First check auth state — redirect to login when signed out.
     final authState = ref.watch(authStateProvider);
     if (authState.isLoading) return const _SplashScreen();
@@ -91,7 +109,14 @@ class _AuthGate extends ConsumerWidget {
       error: (_, __) => const LoginScreen(),
       data: (profile) {
         if (profile == null) return const _SplashScreen();
-        return MainShell(user: profile, onUserChanged: onUserChanged);
+        // ValueKey forces Flutter to destroy and recreate the entire widget
+        // tree when the uid changes, preventing stale state from leaking
+        // across accounts.
+        return MainShell(
+          key: ValueKey(firebaseUser.uid),
+          user: profile,
+          onUserChanged: onUserChanged,
+        );
       },
     );
   }

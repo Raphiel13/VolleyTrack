@@ -12,7 +12,20 @@
           "package_name": "com.rafal.volleymanager"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "239125281431-g6b954g47gu0f2gkahgr0nvgelni6lqk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rafal.volleymanager",
+            "certificate_hash": "efa7d3b4e05f6075b8848376db61c3961e000c12"
+          }
+        },
+        {
+          "client_id": "239125281431-m0nmnroi0685u1me1rd6k7686bpuvv08.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBSZ7JVbzq3rMtm60UrD2el6aBSGPHO8T4"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "239125281431-m0nmnroi0685u1me1rd6k7686bpuvv08.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "239125281431-msvqrpg35qsto3po26in6heif9rhe5bi.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.volleytrack"
+              }
+            }
+          ]
         }
       }
     },
@@ -31,7 +56,20 @@
           "package_name": "com.rafal.volleytrack"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "239125281431-h3vbtb6vbb4pb066hr6tkkgb6ogt737j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rafal.volleytrack",
+            "certificate_hash": "efa7d3b4e05f6075b8848376db61c3961e000c12"
+          }
+        },
+        {
+          "client_id": "239125281431-m0nmnroi0685u1me1rd6k7686bpuvv08.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBSZ7JVbzq3rMtm60UrD2el6aBSGPHO8T4"
@@ -39,7 +77,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "239125281431-m0nmnroi0685u1me1rd6k7686bpuvv08.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "239125281431-msvqrpg35qsto3po26in6heif9rhe5bi.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.volleytrack"
+              }
+            }
+          ]
         }
       }
     }
