@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/models.dart';
@@ -94,6 +96,41 @@ class GroupRepository {
   /// Updates the nextGame label for a group.
   Future<void> setNextGame(String groupId, String nextGame) {
     return _groups.doc(groupId).update({'nextGame': nextGame});
+  }
+
+  // ── Invite codes ───────────────────────────────────────────────────────────
+
+  static const _kChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  static final _rng = Random.secure();
+
+  static String _randomCode() => List.generate(
+        6, (_) => _kChars[_rng.nextInt(_kChars.length)]).join();
+
+  /// Generates a random 6-character invite code, persists it on the group
+  /// document and returns the code.
+  Future<String> generateInviteCode(String groupId) async {
+    final code = _randomCode();
+    await _groups.doc(groupId).update({'inviteCode': code});
+    return code;
+  }
+
+  /// Returns the [Group] whose `inviteCode` field equals [code], or null
+  /// if no such group exists.
+  Future<Group?> findGroupByInviteCode(String code) async {
+    final snap = await _groups
+        .where('inviteCode', isEqualTo: code.toUpperCase())
+        .limit(1)
+        .get();
+    if (snap.docs.isEmpty) return null;
+    return _fromDoc(snap.docs.first);
+  }
+
+  /// Finds the group with [code] and adds [userId] to its `members` array.
+  /// Throws [GroupNotFoundException] when the code doesn't match any group.
+  Future<void> joinGroupByCode(String code, String userId) async {
+    final group = await findGroupByInviteCode(code);
+    if (group == null) throw GroupNotFoundException(code);
+    await joinGroup(group.id, userId);
   }
 
   // ── Mapping ────────────────────────────────────────────────────────────────
