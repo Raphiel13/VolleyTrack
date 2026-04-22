@@ -25,6 +25,7 @@ dependencies:
   google_sign_in: ^6.2.1
   flutter_riverpod: ^2.5.1
   google_maps_flutter: ^2.9.0
+  image_picker: ^1.1.2
  
 dev_dependencies:
   flutter_test:
