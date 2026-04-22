@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -441,16 +443,89 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
 
 // ── Add Match Sheet ───────────────────────────────────────────────────────────
 
-class _AddMatchSheet extends StatefulWidget {
+class _AddMatchSheet extends ConsumerStatefulWidget {
   final VoidCallback onClose;
   const _AddMatchSheet({required this.onClose});
 
   @override
-  State<_AddMatchSheet> createState() => _AddMatchSheetState();
+  ConsumerState<_AddMatchSheet> createState() => _AddMatchSheetState();
 }
 
-class _AddMatchSheetState extends State<_AddMatchSheet> {
+class _AddMatchSheetState extends ConsumerState<_AddMatchSheet> {
+  final _opponentCtrl = TextEditingController();
+  final _scoreCtrl = TextEditingController();
+  final _pointsCtrl = TextEditingController();
+  final _acesCtrl = TextEditingController();
+  final _blocksCtrl = TextEditingController();
+  final _receptionsCtrl = TextEditingController();
+  final _errorsCtrl = TextEditingController();
   bool? _win;
+  bool _loading = false;
+  DateTime _selectedDate = DateTime.now();
+
+  @override
+  void dispose() {
+    _opponentCtrl.dispose();
+    _scoreCtrl.dispose();
+    _pointsCtrl.dispose();
+    _acesCtrl.dispose();
+    _blocksCtrl.dispose();
+    _receptionsCtrl.dispose();
+    _errorsCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (_opponentCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content:
+            Text('Podaj nazwę rywala', style: AppTheme.inter()),
+        backgroundColor: AppColors.red,
+        behavior: SnackBarBehavior.floating,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ));
+      return;
+    }
+
+    setState(() => _loading = true);
+    final uid =
+        ref.read(authRepositoryProvider).currentUser?.uid ?? '';
+
+    try {
+      await FirebaseFirestore.instance.collection('matches').add({
+        'userId': uid,
+        'opponent': _opponentCtrl.text.trim(),
+        'score': _scoreCtrl.text.trim(),
+        'points': int.tryParse(_pointsCtrl.text.trim()) ?? 0,
+        'isWin': _win ?? false,
+        'aces': int.tryParse(_acesCtrl.text.trim()) ?? 0,
+        'blocks': int.tryParse(_blocksCtrl.text.trim()) ?? 0,
+        'receptions': int.tryParse(_receptionsCtrl.text.trim()) ?? 0,
+        'errors': int.tryParse(_errorsCtrl.text.trim()) ?? 0,
+        'dateTime': Timestamp.fromDate(DateTime(
+          _selectedDate.year,
+          _selectedDate.month,
+          _selectedDate.day,
+          DateTime.now().hour,
+          DateTime.now().minute,
+        )),
+      });
+      if (mounted) widget.onClose();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Nie udało się zapisać meczu',
+              style: AppTheme.inter()),
+          backgroundColor: AppColors.red,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ));
+        setState(() => _loading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -463,67 +538,225 @@ class _AddMatchSheetState extends State<_AddMatchSheet> {
           alignment: Alignment.bottomCenter,
           child: GestureDetector(
             onTap: () {},
-            child: Container(
-              decoration: BoxDecoration(
-                color: t.bg,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 0,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 32,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 36,
-                      height: 4,
-                      margin: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: t.label4,
-                        borderRadius: BorderRadius.circular(99),
+            child: SingleChildScrollView(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: t.bg,
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                padding: EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  top: 0,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        margin: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: t.label4,
+                          borderRadius: BorderRadius.circular(99),
+                        ),
                       ),
                     ),
-                  ),
-                  Text(
-                    'Nowy mecz',
-                    style: AppTheme.inter(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: t.label,
+                    Text(
+                      'Nowy mecz',
+                      style: AppTheme.inter(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: t.label,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  ...['Rywal / drużyna', 'Wynik (np. 3–1)', 'Twoje punkty']
-                      .map((h) => Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: TextField(
-                              decoration: InputDecoration(hintText: h),
-                            ),
-                          )),
-                  Row(children: [
-                    Expanded(
-                        child: _resultBtn('✓ Wygrana', _win == true,
-                            () => setState(() => _win = true))),
-                    const SizedBox(width: 10),
-                    Expanded(
-                        child: _resultBtn('✗ Przegrana', _win == false,
-                            () => setState(() => _win = false))),
-                  ]),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: widget.onClose,
-                      child: const Text('Zapisz mecz'),
+                    const SizedBox(height: 16),
+
+                    // ── Required fields ──────────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: TextField(
+                        controller: _opponentCtrl,
+                        decoration:
+                            const InputDecoration(hintText: 'Rywal / drużyna'),
+                      ),
                     ),
-                  ),
-                ],
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: TextField(
+                        controller: _scoreCtrl,
+                        decoration:
+                            const InputDecoration(hintText: 'Wynik (np. 3–1)'),
+                      ),
+                    ),
+
+                    // ── Date picker ──────────────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: GestureDetector(
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: _selectedDate,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime.now(),
+                          );
+                          if (picked != null) {
+                            setState(() => _selectedDate = picked);
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 14),
+                          decoration: BoxDecoration(
+                            color: t.bg2,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(CupertinoIcons.calendar,
+                                  size: 20, color: t.label2),
+                              const SizedBox(width: 10),
+                              Text(
+                                'Data meczu',
+                                style: AppTheme.inter(
+                                    fontSize: 16, color: t.label2),
+                              ),
+                              const Spacer(),
+                              Text(
+                                _formatDate(_selectedDate),
+                                style: AppTheme.inter(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: t.label),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(CupertinoIcons.chevron_right,
+                                  size: 14, color: t.label3),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: TextField(
+                        controller: _pointsCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration:
+                            const InputDecoration(hintText: 'Twoje punkty'),
+                      ),
+                    ),
+
+                    // ── Win / lose ───────────────────────────────────
+                    Row(children: [
+                      Expanded(
+                          child: _resultBtn('✓ Wygrana', _win == true,
+                              () => setState(() => _win = true))),
+                      const SizedBox(width: 10),
+                      Expanded(
+                          child: _resultBtn('✗ Przegrana', _win == false,
+                              () => setState(() => _win = false))),
+                    ]),
+                    const SizedBox(height: 16),
+
+                    // ── Optional stats ───────────────────────────────
+                    Text(
+                      'Statystyki (opcjonalne)',
+                      style: AppTheme.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: t.label2),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: TextField(
+                            controller: _acesCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                                hintText: 'Asy (opcjonalne)'),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 6),
+                          child: TextField(
+                            controller: _blocksCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                                hintText: 'Bloki (opcjonalne)'),
+                          ),
+                        ),
+                      ),
+                    ]),
+                    const SizedBox(height: 10),
+                    Row(children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: TextField(
+                            controller: _receptionsCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                                hintText: 'Przyjęcia (opcjonalne)'),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 6),
+                          child: TextField(
+                            controller: _errorsCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                                hintText: 'Błędy (opcjonalne)'),
+                          ),
+                        ),
+                      ),
+                    ]),
+                    const SizedBox(height: 16),
+
+                    // ── Submit ───────────────────────────────────────
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: _loading ? null : _save,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.blue,
+                          disabledBackgroundColor:
+                              AppColors.blue.withValues(alpha: 0.5),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
+                          elevation: 0,
+                        ),
+                        child: _loading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                    color: Colors.white, strokeWidth: 2.5),
+                              )
+                            : Text(
+                                'Zapisz mecz',
+                                style: AppTheme.inter(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -531,6 +764,14 @@ class _AddMatchSheetState extends State<_AddMatchSheet> {
       ),
     );
   }
+
+  static const _monthNames = [
+    '', 'sty', 'lut', 'mar', 'kwi', 'maj', 'cze',
+    'lip', 'sie', 'wrz', 'paź', 'lis', 'gru',
+  ];
+
+  String _formatDate(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')} ${_monthNames[d.month]} ${d.year}';
 
   Widget _resultBtn(String lbl, bool active, VoidCallback onTap) {
     final t = AppTokens.of(context);
@@ -540,7 +781,7 @@ class _AddMatchSheetState extends State<_AddMatchSheet> {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: active ? AppColors.blue.withOpacity(0.1) : t.bg2,
+          color: active ? AppColors.blue.withValues(alpha: 0.1) : t.bg2,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: active ? AppColors.blue : t.separator,
