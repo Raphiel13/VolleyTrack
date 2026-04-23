@@ -53,7 +53,22 @@ class AuthRepository {
       accessToken: googleAuth.accessToken,
       idToken: googleAuth.idToken,
     );
-    await _auth.signInWithCredential(credential);
+    final result = await _auth.signInWithCredential(credential);
+    final user = result.user;
+    if (user == null) return;
+
+    final docRef =
+        FirebaseFirestore.instance.collection('users').doc(user.uid);
+    final snap = await docRef.get();
+    if (!snap.exists) {
+      await docRef.set({
+        'name': user.displayName ?? 'Gracz',
+        'email': user.email ?? '',
+        'level': 'recreational',
+        'positions': <String>[],
+        'createdAt': Timestamp.now(),
+      });
+    }
   }
 
   Future<void> signOut() async {
