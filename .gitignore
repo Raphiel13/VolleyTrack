@@ -49,3 +49,4 @@ android/local.properties
 android/local.properties
 android/local.properties
 android/dart-defines.env
+android/app/google-services.json
