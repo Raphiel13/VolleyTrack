@@ -47,3 +47,5 @@ android/key.properties
 android/app/*.keystore
 android/local.properties
 android/local.properties
+android/local.properties
+android/dart-defines.env

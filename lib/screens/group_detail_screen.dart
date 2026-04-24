@@ -11,7 +11,7 @@ import '../theme/app_theme.dart';
 import '../models/models.dart';
 import '../widgets/ios_widgets.dart';
 
-const _kPlacesApiKey = 'AIzaSyBFNGEn6GS7NpyNbAskDYCesfzxNQPu9iM';
+const _kPlacesApiKey = String.fromEnvironment('MAPS_API_KEY', defaultValue: '');
 
 // ─── Local models ─────────────────────────────────────────────────────────────
 
