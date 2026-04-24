@@ -52,7 +52,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBSZ7JVbzq3rMtm60UrD2el6aBSGPHO8T4',
-    appId: '1:239125281431:android:4212787ceeb9da880407d2',
+    appId: '1:239125281431:android:453ea686c97f68c90407d2',
     messagingSenderId: '239125281431',
     projectId: 'volley-manager-f3cff',
     storageBucket: 'volley-manager-f3cff.firebasestorage.app',
@@ -64,6 +64,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '239125281431',
     projectId: 'volley-manager-f3cff',
     storageBucket: 'volley-manager-f3cff.firebasestorage.app',
+    androidClientId: '239125281431-ch5d7m52eogkvp7vo6rksfgbe3tc5nf5.apps.googleusercontent.com',
+    iosClientId: '239125281431-tvrs9d54srg36a4ra6ck0tnti2ajomkv.apps.googleusercontent.com',
     iosBundleId: 'com.rafal.volleymanager',
   );
 
