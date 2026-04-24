@@ -1,4 +1,4 @@
-package com.rafal.volleymanager
+package com.rafal.volleymanagerapp
 
 import io.flutter.embedding.android.FlutterActivity
 
