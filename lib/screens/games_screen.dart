@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../repositories/game_repository.dart';
 import '../theme/app_theme.dart';
@@ -25,6 +26,34 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
   PlayerLevel? _filterLevel;
   GameCategory? _filterCat;
   double _radius = 10.0;
+  LatLng _userLocation = const LatLng(52.2297, 21.0122);
+
+  @override
+  void initState() {
+    super.initState();
+    _initLocation();
+  }
+
+  Future<void> _initLocation() async {
+    if (!await Geolocator.isLocationServiceEnabled()) { return; }
+
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) return;
+
+    final pos = await Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+      ),
+    );
+    if (mounted) {
+      setState(() =>
+          _userLocation = LatLng(pos.latitude, pos.longitude));
+    }
+  }
 
   List<NearbyGame> _applyFilters(List<NearbyGame> games) =>
       games.where((g) {
@@ -120,6 +149,7 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
                   user: widget.user,
                   radius: _radius,
                   onOpen: _openGame,
+                  userLocation: _userLocation,
                 ),
               );
             }
@@ -464,8 +494,6 @@ class _ListView extends StatelessWidget {
 
 // ── Map View ──────────────────────────────────────────────────────────────────
 
-// Warsaw city centre — used as the map origin until games have real coordinates.
-const _kWarsaw = LatLng(52.2297, 21.0122);
 
 
 LatLng _gameLatLng(NearbyGame game) =>
@@ -480,6 +508,7 @@ class _MapView extends StatefulWidget {
   final UserProfile user;
   final double radius;
   final void Function(NearbyGame) onOpen;
+  final LatLng userLocation;
 
   const _MapView({
     required this.allGames,
@@ -487,6 +516,7 @@ class _MapView extends StatefulWidget {
     required this.user,
     required this.radius,
     required this.onOpen,
+    required this.userLocation,
   });
 
   @override
@@ -495,8 +525,8 @@ class _MapView extends StatefulWidget {
 
 class _MapViewState extends State<_MapView> {
   GoogleMapController? _mapCtrl;
-  LatLng _searchCenter = _kWarsaw;
-  LatLng _cameraCenter = _kWarsaw;
+  late LatLng _searchCenter = widget.userLocation;
+  late LatLng _cameraCenter = widget.userLocation;
 
   // Show the button only when the camera has drifted meaningfully from
   // the current search center (~100 m threshold avoids noise from zoom).
@@ -514,6 +544,13 @@ class _MapViewState extends State<_MapView> {
 
   Set<Marker> _buildMarkers() {
     return {
+      Marker(
+        markerId: const MarkerId('user_location'),
+        position: widget.userLocation,
+        infoWindow: const InfoWindow(title: 'Twoja pozycja'),
+        icon: BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueAzure),
+      ),
       for (final g in widget.filteredGames)
         Marker(
           markerId: MarkerId(g.id),
@@ -572,8 +609,8 @@ class _MapViewState extends State<_MapView> {
               child: Stack(
                 children: [
                   GoogleMap(
-                    initialCameraPosition: const CameraPosition(
-                      target: _kWarsaw,
+                    initialCameraPosition: CameraPosition(
+                      target: widget.userLocation,
                       zoom: 12,
                     ),
                     markers: _buildMarkers(),
