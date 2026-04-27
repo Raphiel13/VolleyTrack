@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:geocoding/geocoding.dart' show locationFromAddress;
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,7 +13,7 @@ import '../theme/app_theme.dart';
 import '../models/models.dart';
 import '../widgets/ios_widgets.dart';
 
-const _kPlacesApiKey = 'AIzaSyBSZ7JVbzq3rMtm60UrD2el6aBSGPHO8T4';
+const _kPlacesApiKey = String.fromEnvironment('MAPS_API_KEY', defaultValue: '');
 
 // ─── Local models ─────────────────────────────────────────────────────────────
 
@@ -1373,6 +1374,8 @@ class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
   late DateTime _selectedDate = _roundedNow();
   bool _isOpenToPublic = false;
   bool _loading = false;
+  double? _latitude;
+  double? _longitude;
 
   static DateTime _roundedNow() {
     final base = DateTime.now().add(const Duration(days: 1));
@@ -1451,6 +1454,25 @@ class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
 
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (_locationCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Podaj lokalizację', style: AppTheme.inter()),
+        backgroundColor: AppColors.red,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ));
+      return;
+    }
+    if (_latitude == null || _longitude == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Wybierz lokalizację z listy sugestii',
+            style: AppTheme.inter()),
+        backgroundColor: AppColors.red,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ));
+      return;
+    }
     setState(() => _loading = true);
 
     try {
@@ -1466,6 +1488,8 @@ class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
         'maxPlayers':
             _isOpenToPublic ? int.tryParse(_maxPlayersCtrl.text) ?? 10 : null,
         'spotsTaken': 0,
+        'latitude': _latitude,
+        'longitude': _longitude,
       });
 
       // 2. Update nextGame label on the group document.
@@ -1674,11 +1698,23 @@ class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
                   ),
                 ]),
               ),
-              itemClick: (Prediction prediction) {
-                _locationCtrl.text = prediction.description ?? '';
+              itemClick: (Prediction prediction) async {
+                final desc = prediction.description ?? '';
+                _locationCtrl.text = desc;
                 _locationCtrl.selection = TextSelection.fromPosition(
-                  TextPosition(offset: _locationCtrl.text.length),
+                  TextPosition(offset: desc.length),
                 );
+                try {
+                  final locations = await locationFromAddress(desc);
+                  if (locations.isNotEmpty && mounted) {
+                    setState(() {
+                      _latitude = locations.first.latitude;
+                      _longitude = locations.first.longitude;
+                    });
+                  }
+                } catch (_) {
+                  // geocoding failed — user can still submit, lat/lng will be null
+                }
               },
             ),
             const SizedBox(height: 20),

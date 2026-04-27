@@ -48,6 +48,8 @@ class GameRepository {
         .snapshots()
         .map((snap) => snap.docs.map((doc) {
               final d = doc.data();
+              final lat = (d['latitude'] as num?)?.toDouble() ?? 52.2297;
+              final lng = (d['longitude'] as num?)?.toDouble() ?? 21.0122;
               return NearbyGame(
                 id: doc.id,
                 title: d['title'] as String? ?? 'Gra grupowa',
@@ -58,6 +60,8 @@ class GameRepository {
                 spotsTotal: (d['maxPlayers'] as num? ?? 10).toInt(),
                 spotsTaken: (d['spotsTaken'] as num? ?? 0).toInt(),
                 distanceKm: 0.0,
+                latitude: lat,
+                longitude: lng,
                 isGroupEvent: true,
               );
             }).toList());
