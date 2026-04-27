@@ -565,27 +565,48 @@ class KmSlider extends StatelessWidget {
               onChanged: (v) => onChanged(_fromSlider(v)),
             ),
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: _snaps.asMap().entries.map((e) {
-              final isActive = e.value == value;
-              final lbl = e.key == 0
-                  ? '500m'
-                  : e.key == _snaps.length - 1
-                      ? '50km'
-                      : '${e.value.round()}';
-              return GestureDetector(
-                onTap: () => onChanged(e.value),
-                child: Text(
-                  lbl,
-                  style: AppTheme.inter(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                    color: isActive ? AppColors.blue : t.label3,
-                  ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const visibleTicks = [0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 50.0];
+              // Thumb radius matches RoundSliderThumbShape(enabledThumbRadius: 13).
+              // The thumb travels from thumbR to (width - thumbR).
+              const thumbR = 13.0;
+              final trackW = constraints.maxWidth - 2 * thumbR;
+              return SizedBox(
+                height: 18,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: visibleTicks.map((snap) {
+                    final x = thumbR + _toSlider(snap) * trackW;
+                    final isActive = snap == value;
+                    final lbl = snap < 1
+                        ? '500m'
+                        : snap < 10
+                            ? '${snap.round()}km'
+                            : '${snap.round()}';
+                    return Positioned(
+                      left: x,
+                      top: 0,
+                      child: FractionalTranslation(
+                        translation: const Offset(-0.5, 0),
+                        child: GestureDetector(
+                          onTap: () => onChanged(snap),
+                          child: Text(
+                            lbl,
+                            style: AppTheme.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                              color:
+                                  isActive ? AppColors.blue : t.label3,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
               );
-            }).toList(),
+            },
           ),
           const SizedBox(height: 10),
           Container(

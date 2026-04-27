@@ -42,7 +42,9 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
       permission = await Geolocator.requestPermission();
     }
     if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) return;
+        permission == LocationPermission.deniedForever) {
+      return;
+    }
 
     final pos = await Geolocator.getCurrentPosition(
       locationSettings: const LocationSettings(
