@@ -46,32 +46,44 @@ class AuthRepository {
   }
 
   Future<void> signInWithGoogle() async {
-    final googleUser = await GoogleSignIn(
-      scopes: ['email', 'profile'],
-      serverClientId:
-          '239125281431-m0nmnroi0685u1me1rd6k7686bpuvv08.apps.googleusercontent.com',
-    ).signIn();
-    if (googleUser == null) return;
-    final googleAuth = await googleUser.authentication;
-    final credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth.accessToken,
-      idToken: googleAuth.idToken,
-    );
-    final result = await _auth.signInWithCredential(credential);
-    final user = result.user;
-    if (user == null) return;
+    try {
+      print('Starting Google Sign In');
+      final googleUser = await GoogleSignIn(
+        scopes: ['email', 'profile'],
+        serverClientId:
+            '239125281431-m0nmnroi0685u1me1rd6k7686bpuvv08.apps.googleusercontent.com',
+      ).signIn();
+      print('Google user: ${googleUser?.email}');
+      if (googleUser == null) {
+        print('GoogleSignIn: user cancelled or null');
+        return;
+      }
 
-    final docRef =
-        FirebaseFirestore.instance.collection('users').doc(user.uid);
-    final snap = await docRef.get();
-    if (!snap.exists) {
-      await docRef.set({
-        'name': user.displayName ?? 'Gracz',
-        'email': user.email ?? '',
-        'level': 'recreational',
-        'positions': <String>[],
-        'createdAt': Timestamp.now(),
-      });
+      print('Getting credentials');
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      final result = await _auth.signInWithCredential(credential);
+      final user = result.user;
+      if (user == null) return;
+
+      final docRef =
+          FirebaseFirestore.instance.collection('users').doc(user.uid);
+      final snap = await docRef.get();
+      if (!snap.exists) {
+        await docRef.set({
+          'name': user.displayName ?? 'Gracz',
+          'email': user.email ?? '',
+          'level': 'recreational',
+          'positions': <String>[],
+          'createdAt': Timestamp.now(),
+        });
+      }
+    } catch (e) {
+      print('Error type: ${e.runtimeType}, message: $e');
+      rethrow;
     }
   }
 

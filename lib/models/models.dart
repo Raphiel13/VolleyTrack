@@ -86,6 +86,7 @@ class NearbyGame {
   final double organizerRating;
   final double latitude;
   final double longitude;
+  final bool isGroupEvent;
 
   const NearbyGame({
     required this.id,
@@ -101,6 +102,7 @@ class NearbyGame {
     this.organizerRating = 4.9,
     this.latitude = 52.2297,
     this.longitude = 21.0122,
+    this.isGroupEvent = false,
   });
 
   int get spotsLeft => spotsTotal - spotsTaken;

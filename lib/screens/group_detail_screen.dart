@@ -12,7 +12,7 @@ import '../theme/app_theme.dart';
 import '../models/models.dart';
 import '../widgets/ios_widgets.dart';
 
-const _kPlacesApiKey = String.fromEnvironment('MAPS_API_KEY', defaultValue: '');
+const _kPlacesApiKey = 'AIzaSyBSZ7JVbzq3rMtm60UrD2el6aBSGPHO8T4';
 
 // ─── Local models ─────────────────────────────────────────────────────────────
 
@@ -37,6 +37,8 @@ class GroupEvent {
   final String createdBy;
   final int confirmedCount;
   final List<DateTime> cancelledDates;
+  final bool isOpenToPublic;
+  final int? maxPlayers;
 
   const GroupEvent({
     required this.id,
@@ -45,6 +47,8 @@ class GroupEvent {
     required this.createdBy,
     required this.confirmedCount,
     required this.cancelledDates,
+    this.isOpenToPublic = false,
+    this.maxPlayers,
   });
 
   bool get isCancelled => cancelledDates.any((d) =>
@@ -248,6 +252,8 @@ final _groupEventsProvider =
               createdBy: d['createdBy'] as String? ?? '',
               confirmedCount: confirmed.length,
               cancelledDates: cancelled,
+              isOpenToPublic: d['isOpenToPublic'] as bool? ?? false,
+              maxPlayers: (d['maxPlayers'] as num?)?.toInt(),
             );
           })
           .where((e) => !e.isCancelled)
@@ -1187,9 +1193,46 @@ class _EventTile extends ConsumerWidget {
                           AppTheme.inter(fontSize: 11, color: t.label3)),
                 ],
               ),
-              // Admin cancel
+              // Admin actions
               if (isAdmin) ...[
                 const SizedBox(width: 8),
+                // Toggle open/closed
+                GestureDetector(
+                  onTap: () => FirebaseFirestore.instance
+                      .collection('events')
+                      .doc(event.id)
+                      .update({
+                    'isOpenToPublic': !event.isOpenToPublic,
+                  }),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: event.isOpenToPublic
+                          ? AppColors.green.withValues(alpha: 0.12)
+                          : t.bg2,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: event.isOpenToPublic
+                            ? AppColors.green
+                            : t.separator,
+                        width: 0.5,
+                      ),
+                    ),
+                    child: Text(
+                      event.isOpenToPublic ? 'Otwarta' : 'Zamknij',
+                      style: AppTheme.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: event.isOpenToPublic
+                            ? AppColors.green
+                            : t.label3,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                // Cancel event
                 GestureDetector(
                   onTap: () => _cancel(context),
                   child: Container(
@@ -1201,6 +1244,24 @@ class _EventTile extends ConsumerWidget {
                     ),
                     child: const Icon(CupertinoIcons.xmark,
                         size: 14, color: AppColors.red),
+                  ),
+                ),
+              ] else if (event.isOpenToPublic) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: AppColors.green.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'Otwarta',
+                    style: AppTheme.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.green,
+                    ),
                   ),
                 ),
               ],
@@ -1306,20 +1367,23 @@ class _AddEventSheet extends ConsumerStatefulWidget {
 
 class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
   final _locationCtrl = TextEditingController();
+  final _maxPlayersCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   late DateTime _selectedDate = _roundedNow();
+  bool _isOpenToPublic = false;
+  bool _loading = false;
 
   static DateTime _roundedNow() {
     final base = DateTime.now().add(const Duration(days: 1));
     final minute = (base.minute ~/ 5) * 5;
     return DateTime(base.year, base.month, base.day, base.hour, minute);
   }
-  bool _loading = false;
 
   @override
   void dispose() {
     _locationCtrl.dispose();
+    _maxPlayersCtrl.dispose();
     super.dispose();
   }
 
@@ -1398,6 +1462,10 @@ class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
         'createdBy': widget.uid,
         'confirmedIds': [],
         'cancelledDates': [],
+        'isOpenToPublic': _isOpenToPublic,
+        'maxPlayers':
+            _isOpenToPublic ? int.tryParse(_maxPlayersCtrl.text) ?? 10 : null,
+        'spotsTaken': 0,
       });
 
       // 2. Update nextGame label on the group document.
@@ -1613,6 +1681,70 @@ class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
                 );
               },
             ),
+            const SizedBox(height: 20),
+
+            // ── Open to public ───────────────────────────────────────────
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: t.bg2,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Otwarta dla osób spoza grupy',
+                            style: AppTheme.inter(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                color: t.label)),
+                        const SizedBox(height: 2),
+                        Text('Gra pojawi się na mapie publicznej',
+                            style: AppTheme.inter(
+                                fontSize: 12, color: t.label2)),
+                      ],
+                    ),
+                  ),
+                  CupertinoSwitch(
+                    value: _isOpenToPublic,
+                    activeTrackColor: AppColors.green,
+                    onChanged: (v) =>
+                        setState(() => _isOpenToPublic = v),
+                  ),
+                ],
+              ),
+            ),
+            if (_isOpenToPublic) ...[
+              const SizedBox(height: 10),
+              TextField(
+                controller: _maxPlayersCtrl,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  hintText: 'Maks. liczba graczy (domyślnie 10)',
+                  hintStyle: AppTheme.inter(color: t.label4),
+                  filled: true,
+                  fillColor: t.bg2,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                        color: AppColors.blue, width: 1.5),
+                  ),
+                  prefixIcon: const Icon(CupertinoIcons.person_2,
+                      size: 16, color: AppColors.blue),
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 12),
+                ),
+                style: AppTheme.inter(fontSize: 15, color: t.label),
+              ),
+            ],
             const SizedBox(height: 28),
 
             // ── Submit ───────────────────────────────────────────────────

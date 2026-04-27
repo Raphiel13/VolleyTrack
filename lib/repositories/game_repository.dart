@@ -12,6 +12,10 @@ final openGamesProvider = StreamProvider<List<NearbyGame>>((ref) {
   return ref.watch(gameRepositoryProvider).watchOpenGames();
 });
 
+final publicGroupGamesProvider = StreamProvider<List<NearbyGame>>((ref) {
+  return ref.watch(gameRepositoryProvider).watchPublicGroupGames();
+});
+
 // ─── Repository ───────────────────────────────────────────────────────────────
 
 class GameRepository {
@@ -22,6 +26,9 @@ class GameRepository {
   CollectionReference<Map<String, dynamic>> get _games =>
       _db.collection('games');
 
+  CollectionReference<Map<String, dynamic>> get _events =>
+      _db.collection('events');
+
   /// Streams all open games with a future date, ordered by dateTime.
   Stream<List<NearbyGame>> watchOpenGames() {
     return _games
@@ -30,6 +37,30 @@ class GameRepository {
         .orderBy('dateTime')
         .snapshots()
         .map((snap) => snap.docs.map(NearbyGame.fromFirestore).toList());
+  }
+
+  /// Streams public group events (isOpenToPublic == true) with a future date.
+  Stream<List<NearbyGame>> watchPublicGroupGames() {
+    return _events
+        .where('isOpenToPublic', isEqualTo: true)
+        .where('dateTime', isGreaterThan: Timestamp.now())
+        .orderBy('dateTime')
+        .snapshots()
+        .map((snap) => snap.docs.map((doc) {
+              final d = doc.data();
+              return NearbyGame(
+                id: doc.id,
+                title: d['title'] as String? ?? 'Gra grupowa',
+                location: d['location'] as String? ?? '',
+                dateTime: (d['dateTime'] as Timestamp).toDate(),
+                level: PlayerLevel.recreational,
+                category: GameCategory.indoor,
+                spotsTotal: (d['maxPlayers'] as num? ?? 10).toInt(),
+                spotsTaken: (d['spotsTaken'] as num? ?? 0).toInt(),
+                distanceKm: 0.0,
+                isGroupEvent: true,
+              );
+            }).toList());
   }
 
   /// Adds a new game document. The id from Firestore is set on the returned game.
