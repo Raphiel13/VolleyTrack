@@ -18,8 +18,7 @@ enum PlayerPosition {
   setter('Rozgrywający'),
   opposite('Atakujący'),
   libero('Libero'),
-  middle('Środkowy'),
-  server('Zagrywający');
+  middle('Środkowy');
 
   const PlayerPosition(this.label);
   final String label;
