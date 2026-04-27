@@ -81,6 +81,14 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
     final gamesAsync = ref.watch(openGamesProvider);
+    final publicGroupAsync = ref.watch(publicGroupGamesProvider);
+
+    // Merge public group events into the main list, avoiding id duplicates.
+    final mergedAsync = gamesAsync.whenData((games) {
+      final publicGames = publicGroupAsync.valueOrNull ?? [];
+      final ids = {for (final g in games) g.id};
+      return [...games, ...publicGames.where((g) => !ids.contains(g.id))];
+    });
 
     return CustomScrollView(
       slivers: [
@@ -123,7 +131,7 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
             ),
           ),
         ),
-        gamesAsync.when(
+        mergedAsync.when(
           loading: () => const SliverToBoxAdapter(
             child: _LoadingView(),
           ),
@@ -563,9 +571,11 @@ class _MapViewState extends State<_MapView> {
             onTap: () => widget.onOpen(g),
           ),
           icon: BitmapDescriptor.defaultMarkerWithHue(
-            g.matchesUser(widget.user)
-                ? BitmapDescriptor.hueAzure
-                : BitmapDescriptor.hueRed,
+            g.isGroupEvent
+                ? BitmapDescriptor.hueViolet
+                : g.matchesUser(widget.user)
+                    ? BitmapDescriptor.hueAzure
+                    : BitmapDescriptor.hueRed,
           ),
         ),
     };

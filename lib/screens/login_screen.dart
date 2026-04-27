@@ -89,7 +89,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     try {
       await ref.read(authRepositoryProvider).signInWithGoogle();
     } catch (e) {
-      setState(() => _error = _friendlyError(e.toString()));
+      print('Google Sign In UI error: ${e.runtimeType}: $e');
+      setState(() => _error = e.toString());
     } finally {
       if (mounted) setState(() => _loading = false);
     }
