@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1399,7 +1400,15 @@ class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
         'cancelledDates': [],
       });
 
-      // 2. Fetch group to get member list + name for notifications.
+      // 2. Update nextGame label on the group document.
+      await FirebaseFirestore.instance
+          .collection('groups')
+          .doc(widget.groupId)
+          .update({
+        'nextGame': DateFormat('dd.MM.yyyy HH:mm').format(_selectedDate),
+      });
+
+      // 3. Fetch group to get member list + name for notifications.
       final groupDoc = await FirebaseFirestore.instance
           .collection('groups')
           .doc(widget.groupId)
