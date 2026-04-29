@@ -1,12 +1,13 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:geocoding/geocoding.dart' show locationFromAddress;
-import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_places_flutter/google_places_flutter.dart';
-import 'package:google_places_flutter/model/prediction.dart';
+import 'package:geocoding/geocoding.dart' show placemarkFromCoordinates;
+import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:intl/intl.dart';
 import '../repositories/auth_repository.dart';
 import '../repositories/group_repository.dart';
 import '../theme/app_theme.dart';
@@ -1390,6 +1391,26 @@ class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
     super.dispose();
   }
 
+  Future<void> _openLocationPicker(BuildContext context) async {
+    final initialLoc = (_latitude != null && _longitude != null)
+        ? LatLng(_latitude!, _longitude!)
+        : null;
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _LocationPickerScreen(initialLocation: initialLoc),
+        fullscreenDialog: true,
+      ),
+    );
+    if (result != null && mounted) {
+      setState(() {
+        _latitude = result['lat'] as double;
+        _longitude = result['lng'] as double;
+        _locationCtrl.text = result['address'] as String;
+      });
+    }
+  }
+
   void _pickDateTime(BuildContext context) {
     final t = AppTokens.of(context);
     showCupertinoModalPopup<void>(
@@ -1642,80 +1663,51 @@ class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
                     fontWeight: FontWeight.w500,
                     color: t.label2)),
             const SizedBox(height: 6),
-            GooglePlaceAutoCompleteTextField(
-              textEditingController: _locationCtrl,
-              googleAPIKey: _kPlacesApiKey,
-              debounceTime: 400,
-              isLatLngRequired: false,
-              textStyle: AppTheme.inter(fontSize: 15, color: t.label),
-              inputDecoration: InputDecoration(
-                hintText: 'np. Hala sportowa, ul. Sportowa 1',
-                hintStyle: AppTheme.inter(color: t.label4),
-                filled: true,
-                fillColor: t.bg2,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      const BorderSide(color: AppColors.blue, width: 1.5),
-                ),
-                prefixIcon: const Icon(CupertinoIcons.location_fill,
-                    size: 16, color: AppColors.blue),
-                contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
-              ),
-              boxDecoration: BoxDecoration(
-                color: t.bg,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              seperatedBuilder: Divider(height: 0.5, color: t.separator),
-              itemBuilder: (ctx, index, prediction) => Container(
+            GestureDetector(
+              onTap: () => _openLocationPicker(context),
+              child: Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
-                color: Colors.transparent,
-                child: Row(children: [
-                  Icon(CupertinoIcons.location,
-                      size: 14, color: t.label3),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      prediction.description ?? '',
-                      style: AppTheme.inter(
-                          fontSize: 14, color: t.label),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    horizontal: 14, vertical: 13),
+                decoration: BoxDecoration(
+                  color: t.bg2,
+                  borderRadius: BorderRadius.circular(12),
+                  border: _latitude != null
+                      ? Border.all(
+                          color: AppColors.blue, width: 1.5)
+                      : null,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _latitude != null
+                          ? CupertinoIcons.location_fill
+                          : CupertinoIcons.location,
+                      size: 16,
+                      color: _latitude != null
+                          ? AppColors.blue
+                          : t.label3,
                     ),
-                  ),
-                ]),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _locationCtrl.text.isNotEmpty
+                            ? _locationCtrl.text
+                            : 'Zaznacz na mapie',
+                        style: AppTheme.inter(
+                          fontSize: 15,
+                          color: _locationCtrl.text.isNotEmpty
+                              ? t.label
+                              : t.label4,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Icon(CupertinoIcons.chevron_right,
+                        size: 14, color: t.label3),
+                  ],
+                ),
               ),
-              itemClick: (Prediction prediction) async {
-                final desc = prediction.description ?? '';
-                _locationCtrl.text = desc;
-                _locationCtrl.selection = TextSelection.fromPosition(
-                  TextPosition(offset: desc.length),
-                );
-                try {
-                  final locations = await locationFromAddress(desc);
-                  if (locations.isNotEmpty && mounted) {
-                    setState(() {
-                      _latitude = locations.first.latitude;
-                      _longitude = locations.first.longitude;
-                    });
-                  }
-                } catch (_) {
-                  // geocoding failed — user can still submit, lat/lng will be null
-                }
-              },
             ),
             const SizedBox(height: 20),
 
@@ -1887,3 +1879,312 @@ class _ChatBubble extends StatelessWidget {
   }
 }
 
+// ─── Location Picker Screen ───────────────────────────────────────────────────
+
+class _LocationPickerScreen extends StatefulWidget {
+  final LatLng? initialLocation;
+  const _LocationPickerScreen({this.initialLocation});
+
+  @override
+  State<_LocationPickerScreen> createState() => _LocationPickerScreenState();
+}
+
+class _LocationPickerScreenState extends State<_LocationPickerScreen> {
+  static const _kPoland = LatLng(52.0, 19.0);
+
+  GoogleMapController? _mapCtrl;
+  late LatLng _center;
+  String _address = '';
+  bool _geocoding = false;
+  Timer? _geocodeTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _center = widget.initialLocation ?? _kPoland;
+    _reverseGeocode(_center);
+    if (widget.initialLocation == null) _tryUserLocation();
+  }
+
+  @override
+  void dispose() {
+    _geocodeTimer?.cancel();
+    _mapCtrl?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _tryUserLocation() async {
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) return;
+      var perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.denied ||
+          perm == LocationPermission.deniedForever) return;
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings:
+            const LocationSettings(accuracy: LocationAccuracy.medium),
+      );
+      if (!mounted) return;
+      final loc = LatLng(pos.latitude, pos.longitude);
+      setState(() => _center = loc);
+      _mapCtrl?.animateCamera(CameraUpdate.newLatLngZoom(loc, 14));
+      _reverseGeocode(loc);
+    } catch (_) {}
+  }
+
+  Future<void> _reverseGeocode(LatLng pos) async {
+    setState(() {
+      _geocoding = true;
+      _address = '';
+    });
+    try {
+      final marks = await placemarkFromCoordinates(
+        pos.latitude,
+        pos.longitude,
+      );
+      if (!mounted) return;
+      if (marks.isNotEmpty) {
+        final p = marks.first;
+        final parts = <String>[
+          if (p.street?.isNotEmpty == true) p.street!,
+          if (p.subLocality?.isNotEmpty == true) p.subLocality!,
+          if (p.locality?.isNotEmpty == true) p.locality!,
+        ];
+        setState(() => _address =
+            parts.isNotEmpty ? parts.join(', ') : '${pos.latitude.toStringAsFixed(5)}, ${pos.longitude.toStringAsFixed(5)}');
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _address =
+            '${pos.latitude.toStringAsFixed(5)}, ${pos.longitude.toStringAsFixed(5)}');
+      }
+    } finally {
+      if (mounted) setState(() => _geocoding = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTokens.of(context);
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+          color: AppColors.blue,
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Wybierz lokalizację',
+          style: AppTheme.inter(
+              fontSize: 16, fontWeight: FontWeight.w600, color: t.label),
+        ),
+        backgroundColor: t.bg,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(0.5),
+          child: Divider(height: 0.5, color: t.separator),
+        ),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: Stack(
+              children: [
+                GoogleMap(
+                  initialCameraPosition: CameraPosition(
+                    target: _center,
+                    zoom: widget.initialLocation != null ? 15.0 : 6.0,
+                  ),
+                  onMapCreated: (c) => _mapCtrl = c,
+                  onCameraMove: (pos) => _center = pos.target,
+                  onCameraIdle: () {
+                    _geocodeTimer?.cancel();
+                    _geocodeTimer = Timer(
+                      const Duration(milliseconds: 500),
+                      () => _reverseGeocode(_center),
+                    );
+                  },
+                  myLocationButtonEnabled: false,
+                  zoomControlsEnabled: false,
+                  mapToolbarEnabled: false,
+                  compassEnabled: false,
+                  gestureRecognizers: const {},
+                ),
+                // Static blue pin centered over map
+                Center(
+                  child: Padding(
+                    // Shift up by half the pin height so tip points to center
+                    padding: const EdgeInsets.only(bottom: 44),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: const BoxDecoration(
+                            color: AppColors.blue,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Color(0x59007AFF),
+                                blurRadius: 12,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(Icons.location_pin,
+                              color: Colors.white, size: 22),
+                        ),
+                        // Pin stem
+                        Container(width: 3, height: 12, color: AppColors.blue),
+                        Container(
+                          width: 8,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: AppColors.blue.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                // Zoom controls
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: Column(children: [
+                    _ZoomButton(
+                        label: '+',
+                        onTap: () =>
+                            _mapCtrl?.animateCamera(CameraUpdate.zoomIn())),
+                    const SizedBox(height: 1),
+                    _ZoomButton(
+                        label: '−',
+                        onTap: () =>
+                            _mapCtrl?.animateCamera(CameraUpdate.zoomOut())),
+                  ]),
+                ),
+              ],
+            ),
+          ),
+          // Address + confirm button
+          Container(
+            padding: EdgeInsets.fromLTRB(
+                20, 16, 20, MediaQuery.of(context).padding.bottom + 16),
+            decoration: BoxDecoration(
+              color: t.bg,
+              border:
+                  Border(top: BorderSide(color: t.separator, width: 0.5)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  height: 36,
+                  child: _geocoding
+                      ? const Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                color: AppColors.blue, strokeWidth: 2.5),
+                          ),
+                        )
+                      : Row(children: [
+                          const Icon(CupertinoIcons.location_fill,
+                              size: 16, color: AppColors.blue),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _address.isNotEmpty
+                                  ? _address
+                                  : 'Przesuń mapę, aby wybrać miejsce',
+                              style: AppTheme.inter(
+                                fontSize: 14,
+                                color: _address.isNotEmpty
+                                    ? t.label
+                                    : t.label3,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ]),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: (_address.isEmpty || _geocoding)
+                        ? null
+                        : () => Navigator.pop(context, {
+                              'lat': _center.latitude,
+                              'lng': _center.longitude,
+                              'address': _address,
+                            }),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.blue,
+                      disabledBackgroundColor:
+                          AppColors.blue.withValues(alpha: 0.4),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      'Potwierdź lokalizację',
+                      style: AppTheme.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ZoomButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _ZoomButton({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 6,
+            ),
+          ],
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w300,
+              color: Color(0xFF1C1C1E),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

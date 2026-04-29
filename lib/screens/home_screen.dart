@@ -45,7 +45,7 @@ class HomeScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Witaj z powrotem',
+                    'Witaj',
                     style: AppTheme.inter(
                       fontSize: 13,
                       color: t.label2,
@@ -53,25 +53,14 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        user.name.split(' ').first,
-                        style: AppTheme.inter(
-                          fontSize: 34,
-                          fontWeight: FontWeight.w700,
-                          color: t.label,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      const Icon(
-                        CupertinoIcons.hand_raised_fill,
-                        color: AppColors.blue,
-                        size: 28,
-                      ),
-                    ],
+                  Text(
+                    user.name.split(' ').first,
+                    style: AppTheme.inter(
+                      fontSize: 34,
+                      fontWeight: FontWeight.w700,
+                      color: t.label,
+                      letterSpacing: -0.5,
+                    ),
                   ),
                 ],
               ),
