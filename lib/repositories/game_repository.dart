@@ -62,6 +62,10 @@ class GameRepository {
                 distanceKm: 0.0,
                 latitude: lat,
                 longitude: lng,
+                organizerName: d['createdByName'] as String? ?? '',
+                organizerRating:
+                    (d['organizerRating'] as num?)?.toDouble() ?? 0.0,
+                organizerId: d['createdBy'] as String? ?? '',
                 isGroupEvent: true,
               );
             }).toList());

@@ -802,19 +802,26 @@ class _ScheduleTab extends ConsumerWidget {
   final Group group;
   const _ScheduleTab({required this.group});
 
-  void _showAddSheet(BuildContext context, String uid) {
+  void _showAddSheet(BuildContext context, String uid, String organizerName) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _AddEventSheet(groupId: group.id, uid: uid, groupName: group.name),
+      builder: (_) => _AddEventSheet(
+        groupId: group.id,
+        uid: uid,
+        groupName: group.name,
+        organizerName: organizerName,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = AppTokens.of(context);
-    final uid = ref.watch(authRepositoryProvider).currentUser?.uid ?? '';
+    final currentUser = ref.watch(authRepositoryProvider).currentUser;
+    final uid = currentUser?.uid ?? '';
+    final organizerName = currentUser?.displayName ?? '';
     // group.adminName stores the adminId (see GroupRepository._fromDoc)
     final isAdmin = uid.isNotEmpty && uid == group.adminName;
     final eventsAsync = ref.watch(_groupEventsProvider(group.id));
@@ -879,7 +886,7 @@ class _ScheduleTab extends ConsumerWidget {
             right: 20,
             bottom: 24,
             child: GestureDetector(
-              onTap: () => _showAddSheet(context, uid),
+              onTap: () => _showAddSheet(context, uid, organizerName),
               child: Container(
                 width: 54,
                 height: 54,
@@ -1362,10 +1369,12 @@ class _AddEventSheet extends ConsumerStatefulWidget {
   final String groupId;
   final String uid;
   final String groupName;
+  final String organizerName;
   const _AddEventSheet({
     required this.groupId,
     required this.uid,
     required this.groupName,
+    required this.organizerName,
   });
 
   @override
@@ -1509,6 +1518,7 @@ class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
         'dateTime': Timestamp.fromDate(_selectedDate),
         'location': _locationCtrl.text.trim(),
         'createdBy': widget.uid,
+        'createdByName': widget.organizerName,
         'confirmedIds': [],
         'cancelledDates': [],
         'isOpenToPublic': _isOpenToPublic,

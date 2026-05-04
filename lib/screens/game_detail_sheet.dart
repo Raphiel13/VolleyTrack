@@ -1,19 +1,169 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../repositories/auth_repository.dart';
+import '../repositories/user_repository.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
 import '../widgets/ios_widgets.dart';
 
-class GameDetailSheet extends StatefulWidget {
+class GameDetailSheet extends ConsumerStatefulWidget {
   final NearbyGame game;
   const GameDetailSheet({super.key, required this.game});
 
   @override
-  State<GameDetailSheet> createState() => _GameDetailSheetState();
+  ConsumerState<GameDetailSheet> createState() => _GameDetailSheetState();
 }
 
-class _GameDetailSheetState extends State<GameDetailSheet> {
+class _GameDetailSheetState extends ConsumerState<GameDetailSheet> {
   bool _joined = false;
+  bool _hasRated = false;
+  bool _checkingRating = true;
+  bool _savingRating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkExistingRating();
+  }
+
+  Future<void> _checkExistingRating() async {
+    final uid = ref.read(authRepositoryProvider).currentUser?.uid ?? '';
+    if (uid.isEmpty || widget.game.organizerId.isEmpty) {
+      setState(() => _checkingRating = false);
+      return;
+    }
+    final snap = await FirebaseFirestore.instance
+        .collection('ratings')
+        .where('gameId', isEqualTo: widget.game.id)
+        .where('raterId', isEqualTo: uid)
+        .limit(1)
+        .get();
+    if (mounted) {
+      setState(() {
+        _hasRated = snap.docs.isNotEmpty;
+        _checkingRating = false;
+      });
+    }
+  }
+
+  Future<void> _submitRating(int stars) async {
+    final uid = ref.read(authRepositoryProvider).currentUser?.uid ?? '';
+    if (uid.isEmpty) return;
+    setState(() => _savingRating = true);
+    try {
+      await FirebaseFirestore.instance.collection('ratings').add({
+        'gameId': widget.game.id,
+        'raterId': uid,
+        'organizerId': widget.game.organizerId,
+        'rating': stars,
+        'createdAt': Timestamp.now(),
+      });
+      await ref
+          .read(userRepositoryProvider)
+          .updateOrganizerRating(widget.game.organizerId);
+      if (mounted) {
+        setState(() => _hasRated = true);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Ocena zapisana', style: AppTheme.inter()),
+          backgroundColor: AppColors.green,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 2),
+        ));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content:
+              Text('Nie udało się zapisać oceny', style: AppTheme.inter()),
+          backgroundColor: AppColors.red,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _savingRating = false);
+    }
+  }
+
+  Future<void> _showRatingDialog() async {
+    int selected = 0;
+    final t = AppTokens.of(context);
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: t.bg,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            'Oceń organizatora',
+            style: AppTheme.inter(
+                fontSize: 18, fontWeight: FontWeight.w700, color: t.label),
+            textAlign: TextAlign.center,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                widget.game.organizerName.isNotEmpty
+                    ? widget.game.organizerName
+                    : 'Organizator',
+                style: AppTheme.inter(fontSize: 14, color: t.label2),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(5, (i) {
+                  final star = i + 1;
+                  return GestureDetector(
+                    onTap: () => setDialogState(() => selected = star),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Icon(
+                        selected >= star
+                            ? CupertinoIcons.star_fill
+                            : CupertinoIcons.star,
+                        size: 36,
+                        color: selected >= star
+                            ? AppColors.orange
+                            : t.label4,
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Anuluj',
+                  style: AppTheme.inter(fontSize: 15, color: t.label2)),
+            ),
+            TextButton(
+              onPressed: selected == 0
+                  ? null
+                  : () {
+                      Navigator.pop(ctx);
+                      _submitRating(selected);
+                    },
+              child: Text('Zapisz',
+                  style: AppTheme.inter(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: selected == 0 ? t.label4 : AppColors.blue,
+                  )),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   String _dayLabel(DateTime dt) {
     final now = DateTime.now();
@@ -29,6 +179,11 @@ class _GameDetailSheetState extends State<GameDetailSheet> {
     final g = widget.game;
     final total = g.spotsTotal;
     final taken = g.spotsTaken;
+    final isPast = g.dateTime.isBefore(DateTime.now());
+    final canRate = isPast &&
+        g.organizerId.isNotEmpty &&
+        !_hasRated &&
+        !_checkingRating;
 
     return Container(
       decoration: BoxDecoration(
@@ -72,6 +227,9 @@ class _GameDetailSheetState extends State<GameDetailSheet> {
                               : ChipVariant.blue,
                         ),
                         ChipBadge(g.level.label),
+                        if (isPast)
+                          const ChipBadge('Zakończona',
+                              variant: ChipVariant.green),
                       ]),
                       const SizedBox(height: 8),
                       Text(
@@ -93,11 +251,11 @@ class _GameDetailSheetState extends State<GameDetailSheet> {
                     height: 30,
                     margin: const EdgeInsets.only(left: 12),
                     decoration: BoxDecoration(
-                      color: t.label4.withOpacity(0.5),
+                      color: t.label4.withValues(alpha: 0.5),
                       shape: BoxShape.circle,
                     ),
-                    child:
-                        Icon(CupertinoIcons.xmark, size: 16, color: t.label2),
+                    child: Icon(CupertinoIcons.xmark,
+                        size: 16, color: t.label2),
                   ),
                 ),
               ],
@@ -112,7 +270,8 @@ class _GameDetailSheetState extends State<GameDetailSheet> {
               child: Column(children: [
                 IosRow(
                   leading: SfIconBox(
-                      emoji: '📍', bgColor: t.label4.withOpacity(0.3)),
+                      emoji: '📍',
+                      bgColor: t.label4.withValues(alpha: 0.3)),
                   title: Text(g.location,
                       style: AppTheme.inter(
                           fontSize: 15,
@@ -125,7 +284,8 @@ class _GameDetailSheetState extends State<GameDetailSheet> {
                 const IosSeparator(indent: 16),
                 IosRow(
                   leading: SfIconBox(
-                      emoji: '🕐', bgColor: t.label4.withOpacity(0.3)),
+                      emoji: '🕐',
+                      bgColor: t.label4.withValues(alpha: 0.3)),
                   title: Text(
                     '${_dayLabel(g.dateTime)}, '
                     '${g.dateTime.hour.toString().padLeft(2, '0')}:'
@@ -136,20 +296,23 @@ class _GameDetailSheetState extends State<GameDetailSheet> {
                         color: t.label),
                   ),
                   subtitle: Text('Termin',
-                      style: AppTheme.inter(fontSize: 13, color: t.label2)),
+                      style:
+                          AppTheme.inter(fontSize: 13, color: t.label2)),
                   showChevron: false,
                 ),
                 const IosSeparator(indent: 16),
                 IosRow(
                   leading: SfIconBox(
-                      emoji: '🏐', bgColor: t.label4.withOpacity(0.3)),
+                      emoji: '🏐',
+                      bgColor: t.label4.withValues(alpha: 0.3)),
                   title: Text(g.level.label,
                       style: AppTheme.inter(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
                           color: t.label)),
                   subtitle: Text('Poziom gry',
-                      style: AppTheme.inter(fontSize: 13, color: t.label2)),
+                      style:
+                          AppTheme.inter(fontSize: 13, color: t.label2)),
                   showChevron: false,
                 ),
               ]),
@@ -179,8 +342,9 @@ class _GameDetailSheetState extends State<GameDetailSheet> {
                       style: AppTheme.inter(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color:
-                            g.spotsLeft <= 2 ? AppColors.red : AppColors.green,
+                        color: g.spotsLeft <= 2
+                            ? AppColors.red
+                            : AppColors.green,
                       ),
                     ),
                   ],
@@ -192,7 +356,8 @@ class _GameDetailSheetState extends State<GameDetailSheet> {
                     (i) => Expanded(
                       child: Container(
                         height: 8,
-                        margin: EdgeInsets.only(right: i < total - 1 ? 4 : 0),
+                        margin: EdgeInsets.only(
+                            right: i < total - 1 ? 4 : 0),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(4),
                           color: i < taken
@@ -214,11 +379,12 @@ class _GameDetailSheetState extends State<GameDetailSheet> {
                           width: 8,
                           height: 8,
                           decoration: const BoxDecoration(
-                              shape: BoxShape.circle, color: AppColors.blue)),
+                              shape: BoxShape.circle,
+                              color: AppColors.blue)),
                       const SizedBox(width: 5),
                       Text('$taken zapisanych',
-                          style:
-                              AppTheme.inter(fontSize: 11, color: t.label2)),
+                          style: AppTheme.inter(
+                              fontSize: 11, color: t.label2)),
                     ]),
                     Row(children: [
                       Container(
@@ -228,8 +394,8 @@ class _GameDetailSheetState extends State<GameDetailSheet> {
                               shape: BoxShape.circle, color: t.label4)),
                       const SizedBox(width: 5),
                       Text('${g.spotsLeft} wolnych',
-                          style:
-                              AppTheme.inter(fontSize: 11, color: t.label2)),
+                          style: AppTheme.inter(
+                              fontSize: 11, color: t.label2)),
                     ]),
                   ],
                 ),
@@ -242,44 +408,120 @@ class _GameDetailSheetState extends State<GameDetailSheet> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: IosCard(
-              child: IosRow(
-                leading: UserAvatar(name: g.organizerName, size: 36),
-                title: Text(g.organizerName,
-                    style: AppTheme.inter(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: t.label)),
-                subtitle: Text('Organizator · ${g.organizerRating} ⭐',
-                    style: AppTheme.inter(fontSize: 13, color: t.label2)),
-                showChevron: false,
-                trailing: TextButton(
-                  onPressed: () {},
-                  style: TextButton.styleFrom(
-                    backgroundColor: AppColors.blue.withOpacity(0.1),
-                    foregroundColor: AppColors.blue,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: Text('Napisz',
+              child: Column(
+                children: [
+                  IosRow(
+                    leading: UserAvatar(name: g.organizerName, size: 36),
+                    title: Text(
+                      g.organizerName.isNotEmpty
+                          ? g.organizerName
+                          : 'Organizator',
                       style: AppTheme.inter(
-                          fontSize: 13, fontWeight: FontWeight.w600)),
-                ),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: t.label),
+                    ),
+                    subtitle: Text(
+                      g.organizerRating > 0
+                          ? 'Organizator · ${g.organizerRating.toStringAsFixed(1)} ⭐'
+                          : 'Organizator',
+                      style:
+                          AppTheme.inter(fontSize: 13, color: t.label2),
+                    ),
+                    showChevron: false,
+                    trailing: TextButton(
+                      onPressed: () {},
+                      style: TextButton.styleFrom(
+                        backgroundColor:
+                            AppColors.blue.withValues(alpha: 0.1),
+                        foregroundColor: AppColors.blue,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 6),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: Text('Napisz',
+                          style: AppTheme.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                  if (canRate || _hasRated) ...[
+                    const IosSeparator(indent: 16),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+                      child: _hasRated
+                          ? Row(children: [
+                              const Icon(CupertinoIcons.star_fill,
+                                  size: 14, color: AppColors.orange),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Już oceniłeś/aś tę grę',
+                                style: AppTheme.inter(
+                                    fontSize: 13, color: t.label2),
+                              ),
+                            ])
+                          : SizedBox(
+                              width: double.infinity,
+                              child: TextButton(
+                                onPressed: _savingRating
+                                    ? null
+                                    : _showRatingDialog,
+                                style: TextButton.styleFrom(
+                                  backgroundColor:
+                                      AppColors.orange.withValues(alpha: 0.1),
+                                  foregroundColor: AppColors.orange,
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 10),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius:
+                                          BorderRadius.circular(10)),
+                                ),
+                                child: _savingRating
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                            color: AppColors.orange,
+                                            strokeWidth: 2),
+                                      )
+                                    : Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(
+                                              CupertinoIcons.star_fill,
+                                              size: 14),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            'Oceń organizatora',
+                                            style: AppTheme.inter(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                              ),
+                            ),
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
           const SizedBox(height: 20),
 
           // CTA
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: g.isFull
-                ? _disabledBtn(context, 'Brak wolnych miejsc', t)
-                : _joined
-                    ? _joinedState(context, t)
-                    : _joinBtn(context),
-          ),
+          if (!isPast)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: g.isFull
+                  ? _disabledBtn(context, 'Brak wolnych miejsc', t)
+                  : _joined
+                      ? _joinedState(context, t)
+                      : _joinBtn(context),
+            ),
         ],
       ),
     );
@@ -293,15 +535,16 @@ class _GameDetailSheetState extends State<GameDetailSheet> {
         ),
       );
 
-  Widget _joinedState(BuildContext context, AppTokens t) => Column(children: [
+  Widget _joinedState(BuildContext context, AppTokens t) =>
+      Column(children: [
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.green.withOpacity(0.12),
+            color: AppColors.green.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(14),
-            border:
-                Border.all(color: AppColors.green.withOpacity(0.3), width: 1.5),
+            border: Border.all(
+                color: AppColors.green.withValues(alpha: 0.3), width: 1.5),
           ),
           child: Column(children: [
             Text('✓ Zapisano!',
@@ -321,7 +564,8 @@ class _GameDetailSheetState extends State<GameDetailSheet> {
             onPressed: () => setState(() => _joined = false),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.red,
-              side: BorderSide(color: AppColors.red.withOpacity(0.3)),
+              side: BorderSide(
+                  color: AppColors.red.withValues(alpha: 0.3)),
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14)),

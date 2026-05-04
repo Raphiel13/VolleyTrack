@@ -87,6 +87,7 @@ class NearbyGame {
   final double latitude;
   final double longitude;
   final bool isGroupEvent;
+  final String organizerId;
 
   const NearbyGame({
     required this.id,
@@ -98,11 +99,12 @@ class NearbyGame {
     required this.spotsTotal,
     required this.spotsTaken,
     required this.distanceKm,
-    this.organizerName = 'Marek K.',
-    this.organizerRating = 4.9,
+    this.organizerName = '',
+    this.organizerRating = 0.0,
     this.latitude = 52.2297,
     this.longitude = 21.0122,
     this.isGroupEvent = false,
+    this.organizerId = '',
   });
 
   int get spotsLeft => spotsTotal - spotsTaken;
@@ -126,6 +128,7 @@ class NearbyGame {
       distanceKm: 0.0,
       latitude: (d['latitude'] as num?)?.toDouble() ?? 52.2297,
       longitude: (d['longitude'] as num?)?.toDouble() ?? 21.0122,
+      organizerId: d['organizerId'] as String? ?? '',
     );
   }
 

@@ -85,6 +85,23 @@ class UserRepository {
     });
   }
 
+  /// Recomputes the average rating for [userId] from all 'ratings' documents
+  /// and updates the 'organizerRating' field on their users document.
+  Future<void> updateOrganizerRating(String userId) async {
+    final snap = await _db
+        .collection('ratings')
+        .where('organizerId', isEqualTo: userId)
+        .get();
+    if (snap.docs.isEmpty) return;
+    final avg = snap.docs
+            .map((d) => (d.data()['rating'] as num).toDouble())
+            .fold(0.0, (a, b) => a + b) /
+        snap.docs.length;
+    await _doc(userId).update({
+      'organizerRating': double.parse(avg.toStringAsFixed(1)),
+    });
+  }
+
   // ── Backward-compatible aliases ────────────────────────────────────────────
 
   /// Alias for [watchUser] — kept for existing call sites.
