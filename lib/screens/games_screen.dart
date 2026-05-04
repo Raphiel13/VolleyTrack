@@ -81,14 +81,12 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
     final gamesAsync = ref.watch(openGamesProvider);
-    final publicGroupAsync = ref.watch(publicGroupGamesProvider);
+    final groupGamesAsync = ref.watch(publicGroupGamesProvider);
 
-    // Merge public group events into the main list, avoiding id duplicates.
-    final mergedAsync = gamesAsync.whenData((games) {
-      final publicGames = publicGroupAsync.valueOrNull ?? [];
-      final ids = {for (final g in games) g.id};
-      return [...games, ...publicGames.where((g) => !ids.contains(g.id))];
-    });
+    final allGames = <NearbyGame>[
+      ...gamesAsync.valueOrNull ?? [],
+      ...groupGamesAsync.valueOrNull ?? [],
+    ];
 
     return CustomScrollView(
       slivers: [
@@ -131,7 +129,7 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
             ),
           ),
         ),
-        mergedAsync.when(
+        gamesAsync.when(
           loading: () => const SliverToBoxAdapter(
             child: _LoadingView(),
           ),
@@ -140,8 +138,8 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
               onRetry: () => ref.invalidate(openGamesProvider),
             ),
           ),
-          data: (games) {
-            final filtered = _applyFilters(games);
+          data: (_) {
+            final filtered = _applyFilters(allGames);
             if (_view == _ViewMode.list) {
               return SliverToBoxAdapter(
                 child: _ListView(
@@ -154,7 +152,7 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
             } else {
               return SliverToBoxAdapter(
                 child: _MapView(
-                  allGames: games,
+                  allGames: allGames,
                   filteredGames: filtered,
                   user: widget.user,
                   radius: _radius,

@@ -807,7 +807,7 @@ class _ScheduleTab extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _AddEventSheet(groupId: group.id, uid: uid),
+      builder: (_) => _AddEventSheet(groupId: group.id, uid: uid, groupName: group.name),
     );
   }
 
@@ -1361,7 +1361,12 @@ class _ConfirmBtn extends StatelessWidget {
 class _AddEventSheet extends ConsumerStatefulWidget {
   final String groupId;
   final String uid;
-  const _AddEventSheet({required this.groupId, required this.uid});
+  final String groupName;
+  const _AddEventSheet({
+    required this.groupId,
+    required this.uid,
+    required this.groupName,
+  });
 
   @override
   ConsumerState<_AddEventSheet> createState() => _AddEventSheetState();
@@ -1500,6 +1505,7 @@ class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
       // 1. Create the event document.
       await FirebaseFirestore.instance.collection('events').add({
         'groupId': widget.groupId,
+        'groupName': widget.groupName,
         'dateTime': Timestamp.fromDate(_selectedDate),
         'location': _locationCtrl.text.trim(),
         'createdBy': widget.uid,
@@ -1921,7 +1927,9 @@ class _LocationPickerScreenState extends State<_LocationPickerScreen> {
         perm = await Geolocator.requestPermission();
       }
       if (perm == LocationPermission.denied ||
-          perm == LocationPermission.deniedForever) return;
+          perm == LocationPermission.deniedForever) {
+        return;
+      }
       final pos = await Geolocator.getCurrentPosition(
         locationSettings:
             const LocationSettings(accuracy: LocationAccuracy.medium),

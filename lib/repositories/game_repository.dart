@@ -52,7 +52,7 @@ class GameRepository {
               final lng = (d['longitude'] as num?)?.toDouble() ?? 21.0122;
               return NearbyGame(
                 id: doc.id,
-                title: d['title'] as String? ?? 'Gra grupowa',
+                title: d['groupName'] as String? ?? d['title'] as String? ?? 'Gra grupowa',
                 location: d['location'] as String? ?? '',
                 dateTime: (d['dateTime'] as Timestamp).toDate(),
                 level: PlayerLevel.recreational,
