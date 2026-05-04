@@ -34,8 +34,8 @@ android {
         applicationId = "com.rafal.volleymanagerapp"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = 11
-        versionName = "0.0.7"
+        versionCode = 12
+        versionName = "0.0.8"
         manifestPlaceholders["MAPS_API_KEY"] = 
             localProperties.getProperty("MAPS_API_KEY", "")
     }
