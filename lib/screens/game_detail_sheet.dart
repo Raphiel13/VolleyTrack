@@ -277,7 +277,7 @@ class _GameDetailSheetState extends ConsumerState<GameDetailSheet> {
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
                           color: t.label)),
-                  subtitle: Text('${g.distanceKm} km od Ciebie',
+                  subtitle: Text('${g.distanceKm.toStringAsFixed(1)} km od Ciebie',
                       style: AppTheme.inter(fontSize: 13, color: t.label2)),
                   showChevron: false,
                 ),
@@ -315,6 +315,25 @@ class _GameDetailSheetState extends ConsumerState<GameDetailSheet> {
                           AppTheme.inter(fontSize: 13, color: t.label2)),
                   showChevron: false,
                 ),
+                if (g.price != null) ...[
+                  const IosSeparator(indent: 16),
+                  IosRow(
+                    leading: SfIconBox(
+                        emoji: '💰',
+                        bgColor: t.label4.withValues(alpha: 0.3)),
+                    title: Text(
+                      '${g.price!.toStringAsFixed(g.price! == g.price!.roundToDouble() ? 0 : 2)} zł',
+                      style: AppTheme.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: t.label),
+                    ),
+                    subtitle: Text('Cena za uczestnictwo',
+                        style:
+                            AppTheme.inter(fontSize: 13, color: t.label2)),
+                    showChevron: false,
+                  ),
+                ],
               ]),
             ),
           ),
@@ -429,22 +448,6 @@ class _GameDetailSheetState extends ConsumerState<GameDetailSheet> {
                           AppTheme.inter(fontSize: 13, color: t.label2),
                     ),
                     showChevron: false,
-                    trailing: TextButton(
-                      onPressed: () {},
-                      style: TextButton.styleFrom(
-                        backgroundColor:
-                            AppColors.blue.withValues(alpha: 0.1),
-                        foregroundColor: AppColors.blue,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 6),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
-                      ),
-                      child: Text('Napisz',
-                          style: AppTheme.inter(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600)),
-                    ),
                   ),
                   if (canRate || _hasRated) ...[
                     const IosSeparator(indent: 16),

@@ -66,6 +66,7 @@ class GameRepository {
                 organizerRating:
                     (d['organizerRating'] as num?)?.toDouble() ?? 0.0,
                 organizerId: d['createdBy'] as String? ?? '',
+                price: (d['price'] as num?)?.toDouble(),
                 isGroupEvent: true,
               );
             }).toList());

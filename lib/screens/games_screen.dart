@@ -86,7 +86,16 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
     final allGames = <NearbyGame>[
       ...gamesAsync.valueOrNull ?? [],
       ...groupGamesAsync.valueOrNull ?? [],
-    ];
+    ].map((g) => g.copyWith(
+          distanceKm: Geolocator.distanceBetween(
+                _userLocation.latitude,
+                _userLocation.longitude,
+                g.latitude,
+                g.longitude,
+              ) /
+              1000,
+        ))
+        .toList();
 
     return CustomScrollView(
       slivers: [

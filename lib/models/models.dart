@@ -88,6 +88,7 @@ class NearbyGame {
   final double longitude;
   final bool isGroupEvent;
   final String organizerId;
+  final double? price;
 
   const NearbyGame({
     required this.id,
@@ -105,12 +106,32 @@ class NearbyGame {
     this.longitude = 21.0122,
     this.isGroupEvent = false,
     this.organizerId = '',
+    this.price,
   });
 
   int get spotsLeft => spotsTotal - spotsTaken;
   bool get isFull => spotsLeft <= 0;
 
   bool matchesUser(UserProfile user) => level == user.level;
+
+  NearbyGame copyWith({double? distanceKm}) => NearbyGame(
+        id: id,
+        title: title,
+        location: location,
+        dateTime: dateTime,
+        level: level,
+        category: category,
+        spotsTotal: spotsTotal,
+        spotsTaken: spotsTaken,
+        distanceKm: distanceKm ?? this.distanceKm,
+        organizerName: organizerName,
+        organizerRating: organizerRating,
+        latitude: latitude,
+        longitude: longitude,
+        isGroupEvent: isGroupEvent,
+        organizerId: organizerId,
+        price: price,
+      );
 
   factory NearbyGame.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data()!;
@@ -129,6 +150,7 @@ class NearbyGame {
       latitude: (d['latitude'] as num?)?.toDouble() ?? 52.2297,
       longitude: (d['longitude'] as num?)?.toDouble() ?? 21.0122,
       organizerId: d['organizerId'] as String? ?? '',
+      price: (d['price'] as num?)?.toDouble(),
     );
   }
 

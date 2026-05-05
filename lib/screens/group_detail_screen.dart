@@ -1384,6 +1384,7 @@ class _AddEventSheet extends ConsumerStatefulWidget {
 class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
   final _locationCtrl = TextEditingController();
   final _maxPlayersCtrl = TextEditingController();
+  final _priceCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   late DateTime _selectedDate = _roundedNow();
@@ -1402,6 +1403,7 @@ class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
   void dispose() {
     _locationCtrl.dispose();
     _maxPlayersCtrl.dispose();
+    _priceCtrl.dispose();
     super.dispose();
   }
 
@@ -1527,6 +1529,8 @@ class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
         'spotsTaken': 0,
         'latitude': _latitude,
         'longitude': _longitude,
+        'price': double.tryParse(
+            _priceCtrl.text.trim().replaceAll(',', '.')),
       });
 
       // 2. Update nextGame label on the group document.
@@ -1789,6 +1793,38 @@ class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
                 style: AppTheme.inter(fontSize: 15, color: t.label),
               ),
             ],
+            const SizedBox(height: 10),
+
+            // ── Price ─────────────────────────────────────────────────────
+            TextField(
+              controller: _priceCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                hintText: 'Cena (opcjonalnie, np. 15.00)',
+                hintStyle: AppTheme.inter(color: t.label4),
+                filled: true,
+                fillColor: t.bg2,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      const BorderSide(color: AppColors.blue, width: 1.5),
+                ),
+                prefixIcon: const Icon(CupertinoIcons.money_dollar_circle,
+                    size: 16, color: AppColors.blue),
+                suffixText: 'zł',
+                suffixStyle: AppTheme.inter(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.blue),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              ),
+              style: AppTheme.inter(fontSize: 15, color: t.label),
+            ),
             const SizedBox(height: 28),
 
             // ── Submit ───────────────────────────────────────────────────
