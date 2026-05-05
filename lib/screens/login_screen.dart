@@ -132,19 +132,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   // ── Logo ──────────────────────────────────────────────────
                   const SizedBox(height: 8),
                   Center(
-                    child: Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(22),
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [Color(0xFF007AFF), Color(0xFF30B0C7)],
-                        ),
-                      ),
-                      child: const Center(
-                        child: Text('🏐', style: TextStyle(fontSize: 40)),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(22),
+                      child: Image.asset(
+                        'assets/icon/app_icon.png',
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.cover,
                       ),
                     ),
                   ),

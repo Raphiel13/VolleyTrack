@@ -680,11 +680,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     onPressed: _saving ? null : _save,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _saved ? AppColors.green : AppColors.blue,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 32, vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                     child: _saving
                         ? const SizedBox(
                             height: 20,
-                            width: 20,
+                            width: 30,
                             child: CircularProgressIndicator(
                               color: Colors.white,
                               strokeWidth: 2.5,
