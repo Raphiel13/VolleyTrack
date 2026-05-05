@@ -4,7 +4,8 @@ import '../models/models.dart';
 
 // ─── Model ────────────────────────────────────────────────────────────────────
 
-/// Aggregated season statistics computed from all match documents.
+// Agregowanie statystyk po stronie klienta z surowych dokumentów meczów —
+// unikanie przechowywania wyliczonych wartości w Firestore dla zachowania spójności
 class UserStats {
   final int totalGames;
   final int wins;
@@ -14,8 +15,7 @@ class UserStats {
   final int totalReceptions;
   final int totalErrors;
 
-  /// Number of matches played on each day of the current calendar week.
-  /// Keys: 'Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb', 'Nd'
+  // Aktywność tygodniowa jako mapa klucz-dzień → liczba meczów
   final Map<String, int> weeklyActivity;
 
   const UserStats({
@@ -31,8 +31,10 @@ class UserStats {
 
   int get losses => totalGames - wins;
 
+  // Zwracanie 0.0 gdy brak meczów — unikanie dzielenia przez zero
   double get winRate => totalGames == 0 ? 0.0 : wins / totalGames;
 
+  // Udostępnienie pustego obiektu jako wartości domyślnej przed załadowaniem danych
   static final empty = UserStats(
     totalGames: 0,
     wins: 0,
@@ -61,15 +63,13 @@ final statsRepositoryProvider = Provider<StatsRepository>((ref) {
   return StatsRepository(FirebaseFirestore.instance);
 });
 
-/// Streams aggregated [UserStats] for [userId].
-/// Usage: `ref.watch(statsProvider('uid-here'))`
+// Reagowanie na zmiany w kolekcji meczów w czasie rzeczywistym
 final statsProvider =
     StreamProvider.family<UserStats, String>((ref, userId) {
   return ref.watch(statsRepositoryProvider).watchStats(userId);
 });
 
-/// Streams match history for [userId] ordered by dateTime descending.
-/// Usage: `ref.watch(matchesProvider('uid-here'))`
+// Pobieranie historii meczów posortowanej malejąco — najnowszy mecz na górze listy
 final matchesProvider =
     StreamProvider.family<List<MatchRecord>, String>((ref, userId) {
   return ref.watch(statsRepositoryProvider).watchMatches(userId);
@@ -87,7 +87,8 @@ class StatsRepository {
 
   // ── Aggregated stats ───────────────────────────────────────────────────────
 
-  /// Streams live [UserStats] computed from all match documents for [userId].
+  // Przeliczenie wszystkich statystyk w jednym przebiegu po dokumentach —
+  // minimalizowanie liczby iteracji zamiast wykonywania osobnych zapytań
   Stream<UserStats> watchStats(String userId) {
     return _matches
         .where('userId', isEqualTo: userId)
@@ -103,12 +104,12 @@ class StatsRepository {
       int totalErrors = 0;
       final weeklyActivity = UserStats._emptyWeek();
 
-      // Monday of the current calendar week (00:00:00 local time).
+      // Wyznaczenie zakresu bieżącego tygodnia od poniedziałku (weekday: 1=Pn … 7=Nd)
       final now = DateTime.now();
       final weekStart = DateTime(
         now.year,
         now.month,
-        now.day - (now.weekday - 1), // weekday: 1=Mon … 7=Sun
+        now.day - (now.weekday - 1),
       );
       final weekEnd = weekStart.add(const Duration(days: 7));
 
@@ -122,6 +123,7 @@ class StatsRepository {
         totalReceptions += (d['receptions'] as num? ?? 0).toInt();
         totalErrors += (d['errors'] as num? ?? 0).toInt();
 
+        // Zliczanie meczów tylko z bieżącego tygodnia do wykresu aktywności
         final dt = (d['dateTime'] as Timestamp?)?.toDate();
         if (dt != null && !dt.isBefore(weekStart) && dt.isBefore(weekEnd)) {
           final key = _weekdayKey(dt.weekday);
@@ -144,7 +146,7 @@ class StatsRepository {
 
   // ── Match history ──────────────────────────────────────────────────────────
 
-  /// Streams match history for [userId] ordered by dateTime descending.
+  // Sortowanie po dateTime malejąco — serwer wykonuje sortowanie, nie klient
   Stream<List<MatchRecord>> watchMatches(String userId) {
     return _matches
         .where('userId', isEqualTo: userId)
@@ -155,6 +157,7 @@ class StatsRepository {
               final dt = (d['dateTime'] as Timestamp?)?.toDate();
               return MatchRecord(
                 id: doc.id,
+                // Formatowanie daty po stronie klienta z Timestamp
                 date: dt != null
                     ? '${dt.day} ${_monthName(dt.month)}'
                     : (d['date'] as String? ?? ''),
@@ -169,7 +172,7 @@ class StatsRepository {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
-  /// Maps Dart's [DateTime.weekday] (1 = Mon … 7 = Sun) to a Polish key.
+  // Mapowanie weekday Dart (1-7) na polskie klucze używane w mapie aktywności
   static String _weekdayKey(int weekday) => const {
         1: 'Pn',
         2: 'Wt',
@@ -182,17 +185,7 @@ class StatsRepository {
 
   static String _monthName(int m) => const [
         '',
-        'sty',
-        'lut',
-        'mar',
-        'kwi',
-        'maj',
-        'cze',
-        'lip',
-        'sie',
-        'wrz',
-        'paź',
-        'lis',
-        'gru',
+        'sty', 'lut', 'mar', 'kwi', 'maj', 'cze',
+        'lip', 'sie', 'wrz', 'paź', 'lis', 'gru',
       ][m];
 }

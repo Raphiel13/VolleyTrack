@@ -10,8 +10,8 @@ final userRepositoryProvider = Provider<UserRepository>((ref) {
   return UserRepository(FirebaseFirestore.instance);
 });
 
-/// Streams the current user's profile. Emits null when not signed in or
-/// while the Firestore document doesn't exist yet.
+// Połączenie strumienia uwierzytelnienia z dokumentem Firestore —
+// profil aktualizuje się automatycznie gdy zmienia się stan logowania
 final currentUserProvider = StreamProvider<UserProfile?>((ref) {
   final authState = ref.watch(authStateProvider);
   return authState.when(
@@ -24,8 +24,7 @@ final currentUserProvider = StreamProvider<UserProfile?>((ref) {
   );
 });
 
-/// Streams the current user's profile by uid (family variant).
-/// Emits nothing when uid is empty.
+// Wariant rodzinny — pobieranie profilu dowolnego użytkownika po uid
 final currentUserProfileProvider =
     StreamProvider.family<UserProfile?, String>((ref, uid) {
   if (uid.isEmpty) return const Stream.empty();
@@ -44,8 +43,7 @@ class UserRepository {
 
   // ── Reads ──────────────────────────────────────────────────────────────────
 
-  /// Streams the [UserProfile] for [uid] in real time.
-  /// Skips snapshots where the document does not exist yet.
+  // Pomijanie snapshotów gdzie dokument jeszcze nie istnieje — unikanie null w UI
   Stream<UserProfile> watchUser(String uid) {
     return _doc(uid)
         .snapshots()
@@ -55,14 +53,13 @@ class UserRepository {
 
   // ── Writes ─────────────────────────────────────────────────────────────────
 
-  /// Saves (creates or overwrites) mutable profile fields for [user].
-  /// Uses merge so a missing document is created without error.
+  // Zapisywanie profilu z opcją merge — brak nadpisywania pól nieobecnych w mapie
   Future<void> saveUser(UserProfile user) {
     return _doc(user.id).set(_toMap(user), SetOptions(merge: true));
   }
 
-  /// Creates a profile document only when one doesn't exist yet.
-  /// Uses [displayName] → [email] prefix → 'Gracz' as the initial name.
+  // Tworzenie dokumentu tylko przy pierwszym logowaniu —
+  // priorytet nazwy: displayName → prefiks e-mail → wartość domyślna 'Gracz'
   Future<void> createUserIfNotExists(
       String uid, String displayName, String email) async {
     final ref = _doc(uid);
@@ -85,8 +82,9 @@ class UserRepository {
     });
   }
 
-  /// Recomputes the average rating for [userId] from all 'ratings' documents
-  /// and updates the 'organizerRating' field on their users document.
+  // RATINGS
+  // Przeliczenie średniej oceny organizatora po każdej nowej ocenie —
+  // oceny są niezmienne, więc wystarczy zsumowanie wszystkich i podzielenie przez liczbę
   Future<void> updateOrganizerRating(String userId) async {
     final snap = await _db
         .collection('ratings')
@@ -98,20 +96,16 @@ class UserRepository {
             .fold(0.0, (a, b) => a + b) /
         snap.docs.length;
     await _doc(userId).update({
+      // Zaokrąglenie do jednego miejsca po przecinku przed zapisem
       'organizerRating': double.parse(avg.toStringAsFixed(1)),
     });
   }
 
   // ── Backward-compatible aliases ────────────────────────────────────────────
 
-  /// Alias for [watchUser] — kept for existing call sites.
   Stream<UserProfile> getUser(String uid) => watchUser(uid);
-
-  /// Alias for [saveUser] — kept for existing call sites.
   Future<void> updateUser(UserProfile profile) => saveUser(profile);
 
-  /// Creates a profile from a Firebase [User] object.
-  /// Delegates to [createUserIfNotExists].
   Future<void> createUserProfile(User firebaseUser) {
     return createUserIfNotExists(
       firebaseUser.uid,
@@ -122,6 +116,7 @@ class UserRepository {
 
   // ─── Serialization ──────────────────────────────────────────────────────────
 
+  // Deserializacja dokumentu Firestore do modelu — bezpieczne rzutowanie z wartościami domyślnymi
   UserProfile _fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data()!;
     return UserProfile(
@@ -143,9 +138,11 @@ class UserRepository {
         'level': p.level.name,
         'positions': p.positions.map((pos) => pos.name).toList(),
         'themeMode': p.themeMode.name,
+        // Brak zapisu photoUrl gdy null — zachowanie istniejącego zdjęcia
         if (p.photoUrl != null) 'photoUrl': p.photoUrl,
       };
 
+  // Parsowanie enumu bezpiecznie — nieznana wartość wraca do pierwszego elementu listy
   T _parseEnum<T extends Enum>(List<T> values, String? name) {
     if (name == null) return values.first;
     return values.firstWhere(

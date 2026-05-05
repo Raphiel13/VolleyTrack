@@ -10,8 +10,7 @@ final groupRepositoryProvider = Provider<GroupRepository>((ref) {
   return GroupRepository(FirebaseFirestore.instance);
 });
 
-/// Streams groups where [userId] is in the members array.
-/// Usage: `ref.watch(userGroupsProvider('uid-here'))`
+// Nasłuchiwanie grup danego użytkownika jako reaktywny strumień
 final userGroupsProvider =
     StreamProvider.family<List<Group>, String>((ref, userId) {
   return ref.watch(groupRepositoryProvider).watchUserGroups(userId);
@@ -29,8 +28,7 @@ class GroupRepository {
 
   // ── Reads ──────────────────────────────────────────────────────────────────
 
-  /// Streams groups where [userId] appears in the `members` array,
-  /// ordered alphabetically by name.
+  // Filtrowanie po tablicy members — Firestore obsługuje arrayContains jako pojedynczy indeks
   Stream<List<Group>> watchUserGroups(String userId) {
     return _groups
         .where('members', arrayContains: userId)
@@ -41,8 +39,7 @@ class GroupRepository {
 
   // ── Writes ─────────────────────────────────────────────────────────────────
 
-  /// Creates a new group document. The creator is automatically added to
-  /// `members` and set as `adminId`.
+  // Założenie grupy i automatyczne dodanie twórcy jako pierwszego członka i admina
   Future<Group> createGroup({
     required String name,
     required String adminId,
@@ -64,9 +61,7 @@ class GroupRepository {
     return _fromDoc(snap);
   }
 
-  /// Adds [userId] to the group's `members` array.
-  /// Throws [GroupNotFoundException] if the document does not exist.
-  /// Idempotent — safe to call if the user is already a member.
+  // Dołączenie do grupy w transakcji — sprawdzenie istnienia dokumentu przed modyfikacją
   Future<void> joinGroup(String groupId, String userId) async {
     await _db.runTransaction((tx) async {
       final ref = _groups.doc(groupId);
@@ -80,20 +75,17 @@ class GroupRepository {
     });
   }
 
-  /// Removes [userId] from the group's `members` array.
-  /// Idempotent — safe to call if the user is not a member.
+  // Usunięcie z listy members — arrayRemove jest idempotentne, nie rzuca błędu gdy brak elementu
   Future<void> leaveGroup(String groupId, String userId) async {
     await _groups.doc(groupId).update({
       'members': FieldValue.arrayRemove([userId]),
     });
   }
 
-  /// Marks the group as open/closed.
   Future<void> setOpen(String groupId, {required bool isOpen}) {
     return _groups.doc(groupId).update({'isOpen': isOpen});
   }
 
-  /// Updates the nextGame label for a group.
   Future<void> setNextGame(String groupId, String nextGame) {
     return _groups.doc(groupId).update({'nextGame': nextGame});
   }
@@ -101,21 +93,21 @@ class GroupRepository {
   // ── Invite codes ───────────────────────────────────────────────────────────
 
   static const _kChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+
+  // Użycie kryptograficznie bezpiecznego generatora — unikanie przewidywalności kodów
   static final _rng = Random.secure();
 
   static String _randomCode() => List.generate(
         6, (_) => _kChars[_rng.nextInt(_kChars.length)]).join();
 
-  /// Generates a random 6-character invite code, persists it on the group
-  /// document and returns the code.
+  // Wygenerowanie nowego kodu i nadpisanie poprzedniego — kod jest jednorazowy z założenia
   Future<String> generateInviteCode(String groupId) async {
     final code = _randomCode();
     await _groups.doc(groupId).update({'inviteCode': code});
     return code;
   }
 
-  /// Returns the [Group] whose `inviteCode` field equals [code], or null
-  /// if no such group exists.
+  // Wyszukanie grupy po kodzie — limit(1) ogranicza koszt odczytu do minimum
   Future<Group?> findGroupByInviteCode(String code) async {
     final snap = await _groups
         .where('inviteCode', isEqualTo: code.toUpperCase())
@@ -125,8 +117,7 @@ class GroupRepository {
     return _fromDoc(snap.docs.first);
   }
 
-  /// Finds the group with [code] and adds [userId] to its `members` array.
-  /// Throws [GroupNotFoundException] when the code doesn't match any group.
+  // Dołączenie przez kod — połączenie wyszukiwania i zapisu w dwóch krokach
   Future<void> joinGroupByCode(String code, String userId) async {
     final group = await findGroupByInviteCode(code);
     if (group == null) throw GroupNotFoundException(code);
@@ -138,7 +129,7 @@ class GroupRepository {
   static Group _fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data()!;
 
-    // `members` is stored as an array of userId strings; derive count from it.
+    // Liczba członków wywnioskowana z długości tablicy — nie przechowywana osobno
     final membersList = (d['members'] as List<dynamic>?) ?? [];
 
     return Group(
