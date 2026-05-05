@@ -750,7 +750,7 @@ class GameCard extends StatelessWidget {
                                 ? ChipVariant.red
                                 : ChipVariant.green,
                           ),
-                          ChipBadge('${game.distanceKm} km'),
+                          ChipBadge('${game.distanceKm.toStringAsFixed(1)} km'),
                         ],
                       ),
                     ],
