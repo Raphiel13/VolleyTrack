@@ -35,7 +35,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _saved = false;
   bool _uploadingPhoto = false;
   String? _photoUrl;
-  // Prevents overwriting in-progress edits when the Firestore stream re-emits.
+  // Flaga ochrony formularza przed nadpisaniem przez ponowną emisję strumienia Firestore
   bool _initialized = false;
 
   bool _notifGames = true;
@@ -45,7 +45,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    // Use the prop as an immediate placeholder while Firestore loads.
+    // Inicjalizacja formularza z przekazanym profilem jako natychmiastowy placeholder
     _name = TextEditingController(text: widget.user.name);
     _bio = TextEditingController(text: widget.user.bio);
     _level = widget.user.level;
@@ -70,6 +70,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _initialized = true;
   }
 
+  // Wybór zdjęcia, kompresja do jakości 85%, upload do Firebase Storage i zapis URL w Firestore
   Future<void> _pickAndUploadPhoto(ImageSource source) async {
     final uid = ref.read(authRepositoryProvider).currentUser?.uid ?? '';
     if (uid.isEmpty) return;

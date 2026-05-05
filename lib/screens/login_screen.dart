@@ -5,6 +5,7 @@ import '../theme/app_theme.dart';
 
 // ─── Login Screen ─────────────────────────────────────────────────────────────
 
+// Ekran logowania i rejestracji — jeden widok przełączany animacją zamiast dwóch oddzielnych ekranów
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -47,6 +48,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     super.dispose();
   }
 
+  // Przełączanie trybu z animacją — cofnięcie animacji przed zmianą stanu, by uniknąć migotania
   void _switchMode() {
     _animCtrl.reverse().then((_) {
       setState(() {
@@ -96,6 +98,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     }
   }
 
+  // Tłumaczenie kodów błędów Firebase na komunikaty w języku polskim
   String _friendlyError(String raw) {
     if (raw.contains('user-not-found') || raw.contains('wrong-password') ||
         raw.contains('invalid-credential')) {
@@ -386,6 +389,7 @@ class _GoogleLogo extends StatelessWidget {
   }
 }
 
+// Rysowanie logo Google za pomocą CustomPainter — odwzorowanie barw i kształtu znaku 'G'
 class _GoogleLogoPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {

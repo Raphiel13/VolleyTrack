@@ -28,6 +28,7 @@ class _GameDetailSheetState extends ConsumerState<GameDetailSheet> {
     _checkExistingRating();
   }
 
+  // Sprawdzenie czy bieżący użytkownik już ocenił grę — zapobieganie podwójnym ocenom
   Future<void> _checkExistingRating() async {
     final uid = ref.read(authRepositoryProvider).currentUser?.uid ?? '';
     if (uid.isEmpty || widget.game.organizerId.isEmpty) {
@@ -48,6 +49,7 @@ class _GameDetailSheetState extends ConsumerState<GameDetailSheet> {
     }
   }
 
+  // Zapis oceny w Firestore i przeliczenie średniej organizatora
   Future<void> _submitRating(int stars) async {
     final uid = ref.read(authRepositoryProvider).currentUser?.uid ?? '';
     if (uid.isEmpty) return;
@@ -179,6 +181,7 @@ class _GameDetailSheetState extends ConsumerState<GameDetailSheet> {
     final g = widget.game;
     final total = g.spotsTotal;
     final taken = g.spotsTaken;
+    // Wyświetlanie przycisku oceny tylko dla zakończonych gier z przypisanym organizatorem
     final isPast = g.dateTime.isBefore(DateTime.now());
     final canRate = isPast &&
         g.organizerId.isNotEmpty &&

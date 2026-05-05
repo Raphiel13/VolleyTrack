@@ -25,6 +25,7 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Blokowanie inicjalizacji streamów Firestore przed potwierdzeniem logowania
     final uid = ref.watch(authRepositoryProvider).currentUser?.uid;
     if (uid == null || uid.isEmpty) return const SizedBox.shrink();
 
@@ -80,7 +81,7 @@ class HomeScreen extends ConsumerWidget {
             Builder(builder: (context) {
               final matchesAsync = ref.watch(matchesProvider(uid));
 
-              // Win streak: count consecutive wins from newest match.
+              // Obliczanie serii wygranych — iteracja od najnowszego meczu do pierwszej przegranej
               final streak = matchesAsync.whenOrNull(
                 data: (matches) {
                   int s = 0;
@@ -91,7 +92,7 @@ class HomeScreen extends ConsumerWidget {
                 },
               );
 
-              // Aces per match.
+              // Obliczanie średniej asów — zwracanie null gdy brak danych, by wyświetlić '–'
               final acesPerGame = stats.totalGames == 0
                   ? null
                   : stats.totalAces / stats.totalGames;

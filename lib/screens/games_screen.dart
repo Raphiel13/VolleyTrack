@@ -34,6 +34,7 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
     _initLocation();
   }
 
+  // Żądanie uprawnień i pobranie pozycji GPS przy starcie — fallback na Warszawę gdy brak zgody
   Future<void> _initLocation() async {
     if (!await Geolocator.isLocationServiceEnabled()) { return; }
 
@@ -83,6 +84,7 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
     final gamesAsync = ref.watch(openGamesProvider);
     final groupGamesAsync = ref.watch(publicGroupGamesProvider);
 
+    // Scalanie gier z obu kolekcji i przeliczanie dystansu od pozycji urządzenia
     final allGames = <NearbyGame>[
       ...gamesAsync.valueOrNull ?? [],
       ...groupGamesAsync.valueOrNull ?? [],
@@ -545,8 +547,7 @@ class _MapViewState extends State<_MapView> {
   late LatLng _searchCenter = widget.userLocation;
   late LatLng _cameraCenter = widget.userLocation;
 
-  // Show the button only when the camera has drifted meaningfully from
-  // the current search center (~100 m threshold avoids noise from zoom).
+  // Wykrywanie przesunięcia kamery powyżej progu ~100 m — odfiltrowanie szumu ze zmiany zoomu
   bool get _showSearchHere {
     final dlat = (_cameraCenter.latitude - _searchCenter.latitude).abs();
     final dlng = (_cameraCenter.longitude - _searchCenter.longitude).abs();
@@ -559,6 +560,7 @@ class _MapViewState extends State<_MapView> {
           ? '${v.round()} km'
           : '${v.toStringAsFixed(1)} km';
 
+  // Budowanie zestawu markerów — rozróżnienie pozycji użytkownika, dopasowanych i pozostałych gier
   Set<Marker> _buildMarkers() {
     return {
       Marker(

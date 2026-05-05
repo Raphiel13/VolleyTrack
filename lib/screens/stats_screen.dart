@@ -31,7 +31,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     final stats = ref.watch(statsProvider(uid)).valueOrNull ?? UserStats.empty;
     final matchesAsync = ref.watch(matchesProvider(uid));
 
-    // Normalize weekly activity to [0.0–1.0] for the bar chart.
+    // Normalizacja aktywności tygodniowej do przedziału [0.0–1.0] na potrzeby wykresu słupkowego
     final rawActivity = _days.map((d) => (stats.weeklyActivity[d] ?? 0).toDouble()).toList();
     final maxActivity = rawActivity.fold(0.0, math.max);
     final activity = rawActivity.map((v) => maxActivity > 0 ? v / maxActivity : 0.0).toList();
@@ -477,6 +477,7 @@ class _AddMatchSheetState extends ConsumerState<_AddMatchSheet> {
     super.dispose();
   }
 
+  // Walidacja i zapis meczu w Firestore — pola opcjonalne (asy, bloki) domyślnie 0
   Future<void> _save() async {
     if (_opponentCtrl.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(

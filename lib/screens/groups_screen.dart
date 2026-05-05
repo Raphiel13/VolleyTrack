@@ -22,8 +22,8 @@ class _GroupNotification {
   });
 }
 
-/// Streams the first unread notification for [userId] from the
-/// 'notifications' collection. Emits null when there are none.
+/// Nasłuchiwanie pierwszego nieprzeczytanego powiadomienia użytkownika
+/// z kolekcji 'notifications'. Emituje null gdy brak nieprzeczytanych.
 final _firstNotificationProvider =
     StreamProvider.family<_GroupNotification?, String>((ref, userId) {
   return FirebaseFirestore.instance
@@ -241,7 +241,7 @@ class _NotificationBannerState extends ConsumerState<_NotificationBanner>
   Future<void> _onTap(bool value) async {
     if (_attending != null) return;
     setState(() => _attending = value);
-    // Mark notification as read in Firestore.
+    // Oznaczenie powiadomienia jako przeczytanego w Firestore
     final notif =
         ref.read(_firstNotificationProvider(widget.uid)).valueOrNull;
     if (notif != null) {
@@ -259,7 +259,7 @@ class _NotificationBannerState extends ConsumerState<_NotificationBanner>
   Widget build(BuildContext context) {
     final notifAsync = ref.watch(_firstNotificationProvider(widget.uid));
 
-    // Hide when loading, errored, or no unread notifications remain.
+    // Ukrycie bannera gdy ładowanie, błąd lub brak nieprzeczytanych powiadomień
     final notif = notifAsync.valueOrNull;
     if (notif == null) return const SizedBox.shrink();
 
@@ -580,6 +580,7 @@ class _JoinByCodeSheetState extends ConsumerState<_JoinByCodeSheet> {
     super.dispose();
   }
 
+  // Dołączenie przez kod zaproszenia — walidacja długości przed wysłaniem żądania do Firestore
   Future<void> _join() async {
     final code = _codeCtrl.text.trim().toUpperCase();
     if (code.length != 6) {
@@ -748,6 +749,7 @@ class _CreateGroupSheetState extends ConsumerState<_CreateGroupSheet> {
     super.dispose();
   }
 
+  // Tworzenie grupy z wybraną ikoną — twórca zostaje automatycznie pierwszym adminem
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _loading = true);

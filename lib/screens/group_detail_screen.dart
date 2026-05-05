@@ -79,10 +79,10 @@ class GroupMessage {
 
 // ─── Providers ────────────────────────────────────────────────────────────────
 
-/// Fetches the group document to get member IDs, then loads user profiles.
+/// Pobieranie dokumentu grupy w celu odczytu identyfikatorów członków i załadowania ich profili.
 final _membersProvider =
     StreamProvider.family<List<GroupMember>, String>((ref, groupId) {
-  // Capture current user info for name fallback.
+  // Pobranie danych bieżącego użytkownika jako fallback dla nazwy wyświetlanej
   final currentUser = ref.read(authRepositoryProvider).currentUser;
   final currentUid = currentUser?.uid ?? '';
   final authDisplayName = currentUser?.displayName ?? '';
@@ -100,7 +100,7 @@ final _membersProvider =
     if (memberIds.isEmpty) return <GroupMember>[];
 
     final adminId = d['adminId'] as String? ?? '';
-    // Firestore whereIn limit: 30 items
+    // Ograniczenie zapytania whereIn do 30 elementów — limit Firestore
     final snap = await FirebaseFirestore.instance
         .collection('users')
         .where(FieldPath.documentId,
@@ -109,7 +109,7 @@ final _membersProvider =
 
     final profileMap = {for (final doc in snap.docs) doc.id: doc.data()};
 
-    // Iterate ALL memberIds so members without a users/ doc still appear.
+    // Iteracja po wszystkich memberIds — członkowie bez dokumentu users/ są nadal widoczni
     return memberIds.take(30).map((memberId) {
       final p = profileMap[memberId];
       final rawName = (p?['name'] as String? ?? '').trim();
@@ -139,11 +139,9 @@ final _membersProvider =
   });
 });
 
-/// Streams confirmed members for an event as full [GroupMember] profiles.
-/// Reads confirmations (status == 'yes') then cross-references with the
-/// 'users' collection for nick, position and level.
-/// Falls back to the name stored in the confirmation doc if the user
-/// profile doesn't exist yet.
+/// Nasłuchiwanie potwierdzonych uczestników terminu jako pełnych profili [GroupMember].
+/// Odczyt potwierdzeń ze statusem 'yes' i weryfikacja krzyżowa z kolekcją 'users'.
+/// Fallback na nazwę z dokumentu potwierdzenia gdy profil użytkownika nie istnieje.
 final _eventConfirmedProvider =
     StreamProvider.family<List<GroupMember>, (String, String)>(
         (ref, params) {
@@ -162,7 +160,7 @@ final _eventConfirmedProvider =
       .asyncMap((snap) async {
     if (snap.docs.isEmpty) return <GroupMember>[];
 
-    // uid → stored name fallback (in case users doc is missing)
+    // Mapa fallbacków uid → nazwa z dokumentu potwierdzenia, gdy brak profilu users/
     final fallback = <String, String>{
       for (final d in snap.docs)
         (d.data()['userId'] as String? ?? ''):
@@ -204,8 +202,8 @@ final _eventConfirmedProvider =
   });
 });
 
-/// Streams the current user's confirmation status for one event.
-/// Document ID = "${eventId}_${userId}" for O(1) upserts.
+/// Nasłuchiwanie statusu potwierdzenia bieżącego użytkownika dla danego terminu.
+/// ID dokumentu = "${eventId}_${userId}" — zapis w czasie O(1).
 final _userConfirmProvider =
     StreamProvider.family<String?, (String, String)>((ref, params) {
   final (eventId, userId) = params;
@@ -217,7 +215,7 @@ final _userConfirmProvider =
       .map((s) => s.exists ? (s.data()?['status'] as String?) : null);
 });
 
-/// Streams confirmed count for one event (status == 'yes').
+/// Nasłuchiwanie liczby potwierdzeń dla terminu ze statusem 'yes'.
 final _confirmedCountProvider =
     StreamProvider.family<int, String>((ref, eventId) {
   return FirebaseFirestore.instance
@@ -228,8 +226,8 @@ final _confirmedCountProvider =
       .map((s) => s.docs.length);
 });
 
-/// Streams upcoming events for the group ordered by dateTime.
-/// Events where dateTime appears in cancelledDates are filtered out client-side.
+/// Nasłuchiwanie nadchodzących terminów grupy posortowanych po dateTime.
+/// Odfiltrowanie terminów z anulowanymi datami po stronie klienta.
 final _groupEventsProvider =
     StreamProvider.family<List<GroupEvent>, String>((ref, groupId) {
   return FirebaseFirestore.instance
@@ -311,6 +309,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
     super.dispose();
   }
 
+  // Generowanie nowego kodu zaproszenia i wyświetlanie go z opcją kopiowania do schowka
   Future<void> _showInviteSheet(BuildContext context) async {
     final t = AppTokens.of(context);
     final code = await ref
@@ -469,15 +468,15 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
 
 // ─── Tab 1: Skład ─────────────────────────────────────────────────────────────
 
-/// Avatar color palette — one per member, derived from their uid hash.
+/// Paleta kolorów awatarów — deterministyczna na podstawie hasha uid użytkownika
 const _kAvatarColors = <Color>[
   AppColors.blue,
   AppColors.teal,
   AppColors.green,
   AppColors.orange,
   AppColors.purple,
-  Color(0xFF5856D6), // indigo
-  Color(0xFFFF2D55), // pink
+  Color(0xFF5856D6), // indygo
+  Color(0xFFFF2D55), // różowy
 ];
 
 Color _avatarColor(String uid) =>
@@ -493,15 +492,15 @@ class _RosterTab extends ConsumerWidget {
     final uid = ref.watch(authRepositoryProvider).currentUser?.uid ?? '';
     final isAdmin = uid.isNotEmpty && uid == group.adminName;
 
-    // Next upcoming event (first in sorted list).
+    // Najbliższy termin — pierwszy element posortowanej listy
     final nextEvent =
         ref.watch(_groupEventsProvider(group.id)).valueOrNull?.firstOrNull;
 
-    // Confirmed members for that event (empty stream when no event).
+    // Potwierdzone osoby dla tego terminu — pusty strumień gdy brak terminu
     final confirmedAsync = ref.watch(
         _eventConfirmedProvider((nextEvent?.id ?? '', group.adminName)));
 
-    // All group members — needed for admin "unconfirmed" section.
+    // Wszyscy członkowie grupy — potrzebni do sekcji niepotwierdzonych admina
     final membersAsync = ref.watch(_membersProvider(group.id));
 
     final items = <Widget>[];
@@ -655,7 +654,7 @@ class _RosterTab extends ConsumerWidget {
         }
       }
     } else {
-      // No upcoming events — fall back to full member list.
+      // Brak nadchodzących terminów — wyświetlenie pełnej listy członków
       final members = membersAsync.valueOrNull;
       if (members == null) {
         items.add(const Padding(
@@ -822,7 +821,7 @@ class _ScheduleTab extends ConsumerWidget {
     final currentUser = ref.watch(authRepositoryProvider).currentUser;
     final uid = currentUser?.uid ?? '';
     final organizerName = currentUser?.displayName ?? '';
-    // group.adminName stores the adminId (see GroupRepository._fromDoc)
+    // group.adminName przechowuje adminId — mapowanie w GroupRepository._fromDoc
     final isAdmin = uid.isNotEmpty && uid == group.adminName;
     final eventsAsync = ref.watch(_groupEventsProvider(group.id));
 
@@ -938,7 +937,7 @@ class _ChatTabState extends ConsumerState<_ChatTab> {
     final authUser = ref.read(authRepositoryProvider).currentUser;
     final uid = authUser?.uid ?? '';
 
-    // Resolve display name: users/{uid}.name → Auth displayName → 'Gracz'
+    // Rozwiązanie nazwy wyświetlanej: users/{uid}.name → Auth displayName → 'Gracz'
     String userName = authUser?.displayName ?? '';
     if (uid.isNotEmpty) {
       final doc = await FirebaseFirestore.instance
@@ -985,7 +984,7 @@ class _ChatTabState extends ConsumerState<_ChatTab> {
                       style: AppTheme.inter(fontSize: 14, color: t.label3)),
                 );
               }
-              // Newest-first from Firestore + reverse: true = newest at bottom
+              // Najnowsze wiadomości z Firestore + reverse: true = najnowsze na dole listy
               return ListView.builder(
                 reverse: true,
                 padding: const EdgeInsets.all(16),
@@ -1059,12 +1058,12 @@ class _EventTile extends ConsumerWidget {
         .doc('${event.id}_$uid');
 
     if (status.isEmpty) {
-      // Toggled off — remove the document so the person leaves the confirmed list
+      // Wyłączenie potwierdzenia — usunięcie dokumentu oznacza wycofanie zgłoszenia
       await docRef.delete();
       return;
     }
 
-    // Resolve display name: users/{uid}.name → Auth displayName → 'Gracz'
+    // Rozwiązanie nazwy wyświetlanej: users/{uid}.name → Auth displayName → 'Gracz'
     String userName =
         ref.read(authRepositoryProvider).currentUser?.displayName ?? '';
     if (uid.isNotEmpty) {
@@ -1143,7 +1142,7 @@ class _EventTile extends ConsumerWidget {
           // ── Header row ──────────────────────────────────────────────────
           Row(
             children: [
-              // Date box
+              // Kafelek daty
               Container(
                 width: 52,
                 padding: const EdgeInsets.symmetric(vertical: 8),
@@ -1171,7 +1170,7 @@ class _EventTile extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // Info
+              // Szczegóły terminu
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1188,7 +1187,7 @@ class _EventTile extends ConsumerWidget {
                   ],
                 ),
               ),
-              // Confirmed count
+              // Liczba potwierdzeń
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -1202,10 +1201,10 @@ class _EventTile extends ConsumerWidget {
                           AppTheme.inter(fontSize: 11, color: t.label3)),
                 ],
               ),
-              // Admin actions
+              // Akcje admina
               if (isAdmin) ...[
                 const SizedBox(width: 8),
-                // Toggle open/closed
+                // Przełączenie statusu publicznego terminu
                 GestureDetector(
                   onTap: () => FirebaseFirestore.instance
                       .collection('events')
@@ -1241,7 +1240,7 @@ class _EventTile extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 6),
-                // Cancel event
+                // Anulowanie terminu
                 GestureDetector(
                   onTap: () => _cancel(context),
                   child: Container(
@@ -1431,10 +1430,8 @@ class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
     final t = AppTokens.of(context);
     showCupertinoModalPopup<void>(
       context: context,
-      // Use popupCtx (the popup's own context) for Navigator.pop —
-      // never the sheet's outer context, which may deactivate while
-      // the picker is visible and cause a null-check crash inside
-      // Navigator.of(context)!.navigatorState.
+      // Użycie kontekstu popupu do Navigator.pop — kontekst zewnętrzny może wygasnąć
+      // gdy picker jest widoczny, co powoduje błąd null w Navigator.of(context)
       builder: (popupCtx) => Container(
         height: 300,
         color: t.bg,
@@ -1513,6 +1510,7 @@ class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
     setState(() => _loading = true);
 
     try {
+      // Tworzenie terminu, aktualizacja nextGame w grupie i wysyłanie powiadomień do członków
       // 1. Create the event document.
       await FirebaseFirestore.instance.collection('events').add({
         'groupId': widget.groupId,
@@ -1988,6 +1986,7 @@ class _LocationPickerScreenState extends State<_LocationPickerScreen> {
     } catch (_) {}
   }
 
+  // Odwrotne geokodowanie współrzędnych na adres — aktualizacja przy każdym zatrzymaniu kamery
   Future<void> _reverseGeocode(LatLng pos) async {
     setState(() {
       _geocoding = true;
@@ -2067,10 +2066,10 @@ class _LocationPickerScreenState extends State<_LocationPickerScreen> {
                   compassEnabled: false,
                   gestureRecognizers: const {},
                 ),
-                // Static blue pin centered over map
+                // Niebieski pin jako nakładka — nieruchomy względem mapy
                 Center(
                   child: Padding(
-                    // Shift up by half the pin height so tip points to center
+                    // Przesunięcie w górę o połowę wysokości pinu — czubek wskazuje środek mapy
                     padding: const EdgeInsets.only(bottom: 44),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -2092,7 +2091,7 @@ class _LocationPickerScreenState extends State<_LocationPickerScreen> {
                           child: const Icon(Icons.location_pin,
                               color: Colors.white, size: 22),
                         ),
-                        // Pin stem
+                        // Nóżka pinu
                         Container(width: 3, height: 12, color: AppColors.blue),
                         Container(
                           width: 8,
@@ -2125,7 +2124,7 @@ class _LocationPickerScreenState extends State<_LocationPickerScreen> {
               ],
             ),
           ),
-          // Address + confirm button
+          // Adres i przycisk potwierdzenia
           Container(
             padding: EdgeInsets.fromLTRB(
                 20, 16, 20, MediaQuery.of(context).padding.bottom + 16),
