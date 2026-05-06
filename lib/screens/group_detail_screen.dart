@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -10,278 +9,28 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 import '../repositories/auth_repository.dart';
+import '../repositories/confirmations_repository.dart';
+import '../repositories/events_repository.dart';
 import '../repositories/group_repository.dart';
+import '../repositories/messages_repository.dart';
+import '../repositories/notifications_repository.dart';
+import '../repositories/user_repository.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
 import '../widgets/ios_widgets.dart';
 
 const _kPlacesApiKey = String.fromEnvironment('MAPS_API_KEY', defaultValue: '');
 
-// ─── Local models ─────────────────────────────────────────────────────────────
+// ─── Aliasy providerów z repozytoriów ─────────────────────────────────────────
+// Prywatne aliasy zachowują istniejące nazwy referencji w ekranie bez konieczności
+// zmiany każdego wywołania ref.watch(...)
 
-class GroupMember {
-  final String id;
-  final String name;
-  final PlayerLevel level;
-  final bool isAdmin;
-
-  const GroupMember({
-    required this.id,
-    required this.name,
-    required this.level,
-    required this.isAdmin,
-  });
-}
-
-class GroupEvent {
-  final String id;
-  final DateTime dateTime;
-  final String location;
-  final String createdBy;
-  final int confirmedCount;
-  final List<DateTime> cancelledDates;
-  final bool isOpenToPublic;
-  final int? maxPlayers;
-
-  const GroupEvent({
-    required this.id,
-    required this.dateTime,
-    required this.location,
-    required this.createdBy,
-    required this.confirmedCount,
-    required this.cancelledDates,
-    this.isOpenToPublic = false,
-    this.maxPlayers,
-  });
-
-  bool get isCancelled => cancelledDates.any((d) =>
-      d.year == dateTime.year &&
-      d.month == dateTime.month &&
-      d.day == dateTime.day &&
-      d.hour == dateTime.hour &&
-      d.minute == dateTime.minute);
-}
-
-class GroupMessage {
-  final String id;
-  final String text;
-  final String userId;
-  final String userName;
-  final DateTime createdAt;
-
-  const GroupMessage({
-    required this.id,
-    required this.text,
-    required this.userId,
-    required this.userName,
-    required this.createdAt,
-  });
-}
-
-// ─── Providers ────────────────────────────────────────────────────────────────
-
-/// Pobieranie dokumentu grupy w celu odczytu identyfikatorów członków i załadowania ich profili.
-final _membersProvider =
-    StreamProvider.family<List<GroupMember>, String>((ref, groupId) {
-  // Pobranie danych bieżącego użytkownika jako fallback dla nazwy wyświetlanej
-  final currentUser = ref.read(authRepositoryProvider).currentUser;
-  final currentUid = currentUser?.uid ?? '';
-  final authDisplayName = currentUser?.displayName ?? '';
-
-  return FirebaseFirestore.instance
-      .collection('groups')
-      .doc(groupId)
-      .snapshots()
-      .asyncMap((groupSnap) async {
-    if (!groupSnap.exists) return <GroupMember>[];
-    final d = groupSnap.data();
-    if (d == null) return <GroupMember>[];
-    final memberIds =
-        List<String>.from((d['members'] as List?) ?? []);
-    if (memberIds.isEmpty) return <GroupMember>[];
-
-    final adminId = d['adminId'] as String? ?? '';
-    // Ograniczenie zapytania whereIn do 30 elementów — limit Firestore
-    final snap = await FirebaseFirestore.instance
-        .collection('users')
-        .where(FieldPath.documentId,
-            whereIn: memberIds.take(30).toList())
-        .get();
-
-    final profileMap = {for (final doc in snap.docs) doc.id: doc.data()};
-
-    // Iteracja po wszystkich memberIds — członkowie bez dokumentu users/ są nadal widoczni
-    return memberIds.take(30).map((memberId) {
-      final p = profileMap[memberId];
-      final rawName = (p?['name'] as String? ?? '').trim();
-      final String name;
-      if (rawName.isNotEmpty) {
-        name = rawName;
-      } else if (memberId == currentUid && authDisplayName.isNotEmpty) {
-        name = authDisplayName;
-      } else {
-        name = 'Gracz';
-      }
-      return GroupMember(
-        id: memberId,
-        name: name,
-        level: PlayerLevel.values.firstWhere(
-          (l) => l.name == (p?['level'] as String? ?? ''),
-          orElse: () => PlayerLevel.recreational,
-        ),
-        isAdmin: memberId == adminId,
-      );
-    }).toList()
-      ..sort((a, b) {
-        if (a.isAdmin) return -1;
-        if (b.isAdmin) return 1;
-        return a.name.compareTo(b.name);
-      });
-  });
-});
-
-/// Nasłuchiwanie potwierdzonych uczestników terminu jako pełnych profili [GroupMember].
-/// Odczyt potwierdzeń ze statusem 'yes' i weryfikacja krzyżowa z kolekcją 'users'.
-/// Fallback na nazwę z dokumentu potwierdzenia gdy profil użytkownika nie istnieje.
-final _eventConfirmedProvider =
-    StreamProvider.family<List<GroupMember>, (String, String)>(
-        (ref, params) {
-  final (eventId, adminId) = params;
-  if (eventId.isEmpty) return Stream.value([]);
-
-  final currentUser = ref.read(authRepositoryProvider).currentUser;
-  final currentUid = currentUser?.uid ?? '';
-  final authDisplayName = currentUser?.displayName ?? '';
-
-  return FirebaseFirestore.instance
-      .collection('confirmations')
-      .where('eventId', isEqualTo: eventId)
-      .where('status', isEqualTo: 'yes')
-      .snapshots()
-      .asyncMap((snap) async {
-    if (snap.docs.isEmpty) return <GroupMember>[];
-
-    // Mapa fallbacków uid → nazwa z dokumentu potwierdzenia, gdy brak profilu users/
-    final fallback = <String, String>{
-      for (final d in snap.docs)
-        (d.data()['userId'] as String? ?? ''):
-            (d.data()['userName'] as String? ?? 'Gracz'),
-    };
-    fallback.remove('');
-
-    final ids = fallback.keys.toList();
-    if (ids.isEmpty) return <GroupMember>[];
-
-    final usersSnap = await FirebaseFirestore.instance
-        .collection('users')
-        .where(FieldPath.documentId, whereIn: ids.take(30).toList())
-        .get();
-
-    final profileMap = {for (final d in usersSnap.docs) d.id: d.data()};
-
-    return ids.map((uid) {
-      final p = profileMap[uid];
-      final rawName = (p?['name'] as String? ?? '').trim();
-      final String name;
-      if (rawName.isNotEmpty) {
-        name = rawName;
-      } else if (uid == currentUid && authDisplayName.isNotEmpty) {
-        name = authDisplayName;
-      } else {
-        name = fallback[uid] ?? 'Gracz';
-      }
-      return GroupMember(
-        id: uid,
-        name: name,
-        level: PlayerLevel.values.firstWhere(
-          (l) => l.name == (p?['level'] as String? ?? ''),
-          orElse: () => PlayerLevel.recreational,
-        ),
-        isAdmin: uid == adminId,
-      );
-    }).toList();
-  });
-});
-
-/// Nasłuchiwanie statusu potwierdzenia bieżącego użytkownika dla danego terminu.
-/// ID dokumentu = "${eventId}_${userId}" — zapis w czasie O(1).
-final _userConfirmProvider =
-    StreamProvider.family<String?, (String, String)>((ref, params) {
-  final (eventId, userId) = params;
-  if (userId.isEmpty) return Stream.value(null);
-  return FirebaseFirestore.instance
-      .collection('confirmations')
-      .doc('${eventId}_$userId')
-      .snapshots()
-      .map((s) => s.exists ? (s.data()?['status'] as String?) : null);
-});
-
-/// Nasłuchiwanie liczby potwierdzeń dla terminu ze statusem 'yes'.
-final _confirmedCountProvider =
-    StreamProvider.family<int, String>((ref, eventId) {
-  return FirebaseFirestore.instance
-      .collection('confirmations')
-      .where('eventId', isEqualTo: eventId)
-      .where('status', isEqualTo: 'yes')
-      .snapshots()
-      .map((s) => s.docs.length);
-});
-
-/// Nasłuchiwanie nadchodzących terminów grupy posortowanych po dateTime.
-/// Odfiltrowanie terminów z anulowanymi datami po stronie klienta.
-final _groupEventsProvider =
-    StreamProvider.family<List<GroupEvent>, String>((ref, groupId) {
-  return FirebaseFirestore.instance
-      .collection('events')
-      .where('groupId', isEqualTo: groupId)
-      .where('dateTime', isGreaterThan: Timestamp.now())
-      .orderBy('dateTime')
-      .snapshots()
-      .map((snap) => snap.docs
-          .map((doc) {
-            final d = doc.data();
-            final confirmed =
-                List.from((d['confirmedIds'] as List?) ?? []);
-            final cancelled = ((d['cancelledDates'] as List?) ?? [])
-                .whereType<Timestamp>()
-                .map((t) => t.toDate())
-                .toList();
-            return GroupEvent(
-              id: doc.id,
-              dateTime: (d['dateTime'] as Timestamp).toDate(),
-              location: d['location'] as String? ?? '',
-              createdBy: d['createdBy'] as String? ?? '',
-              confirmedCount: confirmed.length,
-              cancelledDates: cancelled,
-              isOpenToPublic: d['isOpenToPublic'] as bool? ?? false,
-              maxPlayers: (d['maxPlayers'] as num?)?.toInt(),
-            );
-          })
-          .where((e) => !e.isCancelled)
-          .toList());
-});
-
-/// Streams group messages newest-first (reversed in ListView).
-final _groupMessagesProvider =
-    StreamProvider.family<List<GroupMessage>, String>((ref, groupId) {
-  return FirebaseFirestore.instance
-      .collection('messages')
-      .where('groupId', isEqualTo: groupId)
-      .orderBy('createdAt', descending: true)
-      .limit(50)
-      .snapshots()
-      .map((snap) => snap.docs.map((doc) {
-            final d = doc.data();
-            return GroupMessage(
-              id: doc.id,
-              text: d['text'] as String? ?? '',
-              userId: d['userId'] as String? ?? '',
-              userName: d['userName'] as String? ?? '',
-              createdAt:
-                  (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-            );
-          }).toList());
-});
+final _membersProvider = membersProvider;
+final _eventConfirmedProvider = eventConfirmedProvider;
+final _userConfirmProvider = userConfirmProvider;
+final _confirmedCountProvider = confirmedCountProvider;
+final _groupEventsProvider = groupEventsProvider;
+final _groupMessagesProvider = groupMessagesProvider;
 
 // ─── GroupDetailScreen ────────────────────────────────────────────────────────
 
@@ -941,22 +690,17 @@ class _ChatTabState extends ConsumerState<_ChatTab> {
     // Rozwiązanie nazwy wyświetlanej: users/{uid}.name → Auth displayName → 'Gracz'
     String userName = authUser?.displayName ?? '';
     if (uid.isNotEmpty) {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .get();
-      final name = (doc.data()?['name'] as String? ?? '').trim();
+      final name = await ref.read(userRepositoryProvider).getUserName(uid);
       if (name.isNotEmpty) userName = name;
     }
     if (userName.isEmpty) userName = 'Gracz';
 
-    await FirebaseFirestore.instance.collection('messages').add({
-      'text': text,
-      'userId': uid,
-      'userName': userName,
-      'groupId': widget.group.id,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    await ref.read(messagesRepositoryProvider).sendMessage(
+          groupId: widget.group.id,
+          userId: uid,
+          userName: userName,
+          text: text,
+        );
   }
 
   @override
@@ -1054,13 +798,15 @@ class _EventTile extends ConsumerWidget {
   });
 
   Future<void> _setConfirmation(WidgetRef ref, String status) async {
-    final docRef = FirebaseFirestore.instance
-        .collection('confirmations')
-        .doc('${event.id}_$uid');
-
     if (status.isEmpty) {
       // Wyłączenie potwierdzenia — usunięcie dokumentu oznacza wycofanie zgłoszenia
-      await docRef.delete();
+      await ref.read(confirmationsRepositoryProvider).setConfirmation(
+            eventId: event.id,
+            userId: uid,
+            groupId: groupId,
+            status: '',
+            userName: '',
+          );
       return;
     }
 
@@ -1068,25 +814,21 @@ class _EventTile extends ConsumerWidget {
     String userName =
         ref.read(authRepositoryProvider).currentUser?.displayName ?? '';
     if (uid.isNotEmpty) {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .get();
-      final name = (doc.data()?['name'] as String? ?? '').trim();
+      final name = await ref.read(userRepositoryProvider).getUserName(uid);
       if (name.isNotEmpty) userName = name;
     }
     if (userName.isEmpty) userName = 'Gracz';
 
-    await docRef.set({
-      'eventId': event.id,
-      'userId': FirebaseAuth.instance.currentUser!.uid,
-      'groupId': groupId,
-      'status': status,
-      'userName': userName,
-    });
+    await ref.read(confirmationsRepositoryProvider).setConfirmation(
+          eventId: event.id,
+          userId: FirebaseAuth.instance.currentUser!.uid,
+          groupId: groupId,
+          status: status,
+          userName: userName,
+        );
   }
 
-  Future<void> _cancel(BuildContext context) async {
+  Future<void> _cancel(BuildContext context, WidgetRef ref) async {
     final confirmed = await showCupertinoDialog<bool>(
       context: context,
       builder: (dlgCtx) => CupertinoAlertDialog(
@@ -1107,13 +849,9 @@ class _EventTile extends ConsumerWidget {
       ),
     );
     if (confirmed != true) return;
-    await FirebaseFirestore.instance
-        .collection('events')
-        .doc(event.id)
-        .update({
-      'cancelledDates':
-          FieldValue.arrayUnion([Timestamp.fromDate(event.dateTime)]),
-    });
+    await ref
+        .read(eventsRepositoryProvider)
+        .cancelEventDate(event.id, event.dateTime);
   }
 
   @override
@@ -1207,12 +945,10 @@ class _EventTile extends ConsumerWidget {
                 const SizedBox(width: 8),
                 // Przełączenie statusu publicznego terminu
                 GestureDetector(
-                  onTap: () => FirebaseFirestore.instance
-                      .collection('events')
-                      .doc(event.id)
-                      .update({
-                    'isOpenToPublic': !event.isOpenToPublic,
-                  }),
+                  onTap: () => ref
+                      .read(eventsRepositoryProvider)
+                      .setOpenToPublic(event.id,
+                          isOpen: !event.isOpenToPublic),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 8, vertical: 5),
@@ -1243,7 +979,7 @@ class _EventTile extends ConsumerWidget {
                 const SizedBox(width: 6),
                 // Anulowanie terminu
                 GestureDetector(
-                  onTap: () => _cancel(context),
+                  onTap: () => _cancel(context, ref),
                   child: Container(
                     width: 30,
                     height: 30,
@@ -1512,60 +1248,43 @@ class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
 
     try {
       // Tworzenie terminu, aktualizacja nextGame w grupie i wysyłanie powiadomień do członków
-      // 1. Create the event document.
-      await FirebaseFirestore.instance.collection('events').add({
-        'groupId': widget.groupId,
-        'groupName': widget.groupName,
-        'dateTime': Timestamp.fromDate(_selectedDate),
-        'location': _locationCtrl.text.trim(),
-        'createdBy': FirebaseAuth.instance.currentUser!.uid,
-        'createdByName': widget.organizerName,
-        'confirmedIds': [],
-        'cancelledDates': [],
-        'isOpenToPublic': _isOpenToPublic,
-        'maxPlayers':
-            _isOpenToPublic ? int.tryParse(_maxPlayersCtrl.text) ?? 10 : null,
-        'spotsTaken': 0,
-        'latitude': _latitude,
-        'longitude': _longitude,
-        'price': double.tryParse(
-            _priceCtrl.text.trim().replaceAll(',', '.')),
-      });
+      // 1. Utwórz dokument terminu
+      await ref.read(eventsRepositoryProvider).createEvent(
+            groupId: widget.groupId,
+            groupName: widget.groupName,
+            dateTime: _selectedDate,
+            location: _locationCtrl.text.trim(),
+            createdBy: FirebaseAuth.instance.currentUser!.uid,
+            createdByName: widget.organizerName,
+            isOpenToPublic: _isOpenToPublic,
+            maxPlayers:
+                _isOpenToPublic ? int.tryParse(_maxPlayersCtrl.text) ?? 10 : null,
+            latitude: _latitude,
+            longitude: _longitude,
+            price: double.tryParse(_priceCtrl.text.trim().replaceAll(',', '.')),
+          );
 
-      // 2. Update nextGame label on the group document.
-      await FirebaseFirestore.instance
-          .collection('groups')
-          .doc(widget.groupId)
-          .update({
-        'nextGame': DateFormat('dd.MM.yyyy HH:mm').format(_selectedDate),
-      });
+      // 2. Zaktualizuj etykietę nextGame w dokumencie grupy
+      await ref
+          .read(groupRepositoryProvider)
+          .setNextGame(widget.groupId,
+              DateFormat('dd.MM.yyyy HH:mm').format(_selectedDate));
 
-      // 3. Fetch group to get member list + name for notifications.
-      final groupDoc = await FirebaseFirestore.instance
-          .collection('groups')
-          .doc(widget.groupId)
-          .get();
+      // 3. Pobierz listę członków i wyślij powiadomienia
+      final groupDoc = await ref
+          .read(groupRepositoryProvider)
+          .getGroupDoc(widget.groupId);
       final gd = groupDoc.data();
       if (gd != null) {
-        final memberIds =
-            List<String>.from((gd['members'] as List?) ?? []);
+        final memberIds = List<String>.from((gd['members'] as List?) ?? []);
         final groupName = gd['name'] as String? ?? '';
-        final batch = FirebaseFirestore.instance.batch();
-        for (final memberId in memberIds) {
-          batch.set(
-            FirebaseFirestore.instance.collection('notifications').doc(),
-            {
-              'userId': memberId,
-              'groupId': widget.groupId,
-              'type': 'new_event',
-              'title': 'Nowy termin w grupie',
-              'message': 'Nowy termin w grupie $groupName',
-              'read': false,
-              'createdAt': Timestamp.now(),
-            },
-          );
-        }
-        await batch.commit();
+        await ref
+            .read(notificationsRepositoryProvider)
+            .sendNewEventNotifications(
+              groupId: widget.groupId,
+              groupName: groupName,
+              memberIds: memberIds,
+            );
       }
 
       if (mounted) Navigator.pop(context);

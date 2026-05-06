@@ -85,6 +85,35 @@ class StatsRepository {
   CollectionReference<Map<String, dynamic>> get _matches =>
       _db.collection('matches');
 
+  // ── Writes ────────────────────────────────────────────────────────────────
+
+  // Zapis meczu w Firestore — pola opcjonalne (asy, bloki) domyślnie 0
+  Future<void> saveMatch({
+    required String userId,
+    required String opponent,
+    required String score,
+    required int points,
+    required bool isWin,
+    required int aces,
+    required int blocks,
+    required int receptions,
+    required int errors,
+    required DateTime dateTime,
+  }) {
+    return _matches.add({
+      'userId': userId,
+      'opponent': opponent,
+      'score': score,
+      'points': points,
+      'isWin': isWin,
+      'aces': aces,
+      'blocks': blocks,
+      'receptions': receptions,
+      'errors': errors,
+      'dateTime': Timestamp.fromDate(dateTime),
+    });
+  }
+
   // ── Aggregated stats ───────────────────────────────────────────────────────
 
   // Przeliczenie wszystkich statystyk w jednym przebiegu po dokumentach —

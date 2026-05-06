@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -496,24 +495,24 @@ class _AddMatchSheetState extends ConsumerState<_AddMatchSheet> {
         ref.read(authRepositoryProvider).currentUser?.uid ?? '';
 
     try {
-      await FirebaseFirestore.instance.collection('matches').add({
-        'userId': uid,
-        'opponent': _opponentCtrl.text.trim(),
-        'score': _scoreCtrl.text.trim(),
-        'points': int.tryParse(_pointsCtrl.text.trim()) ?? 0,
-        'isWin': _win ?? false,
-        'aces': int.tryParse(_acesCtrl.text.trim()) ?? 0,
-        'blocks': int.tryParse(_blocksCtrl.text.trim()) ?? 0,
-        'receptions': int.tryParse(_receptionsCtrl.text.trim()) ?? 0,
-        'errors': int.tryParse(_errorsCtrl.text.trim()) ?? 0,
-        'dateTime': Timestamp.fromDate(DateTime(
-          _selectedDate.year,
-          _selectedDate.month,
-          _selectedDate.day,
-          DateTime.now().hour,
-          DateTime.now().minute,
-        )),
-      });
+      await ref.read(statsRepositoryProvider).saveMatch(
+            userId: uid,
+            opponent: _opponentCtrl.text.trim(),
+            score: _scoreCtrl.text.trim(),
+            points: int.tryParse(_pointsCtrl.text.trim()) ?? 0,
+            isWin: _win ?? false,
+            aces: int.tryParse(_acesCtrl.text.trim()) ?? 0,
+            blocks: int.tryParse(_blocksCtrl.text.trim()) ?? 0,
+            receptions: int.tryParse(_receptionsCtrl.text.trim()) ?? 0,
+            errors: int.tryParse(_errorsCtrl.text.trim()) ?? 0,
+            dateTime: DateTime(
+              _selectedDate.year,
+              _selectedDate.month,
+              _selectedDate.day,
+              DateTime.now().hour,
+              DateTime.now().minute,
+            ),
+          );
       if (mounted) widget.onClose();
     } catch (_) {
       if (mounted) {

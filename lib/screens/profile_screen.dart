@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -90,10 +89,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       );
       final url = await ref_.getDownloadURL();
 
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .update({'photoUrl': url});
+      await ref.read(userRepositoryProvider).savePhotoUrl(uid, url);
 
       if (mounted) setState(() => _photoUrl = url);
     } catch (_) {

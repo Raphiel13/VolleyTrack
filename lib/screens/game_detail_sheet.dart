@@ -1,8 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repositories/auth_repository.dart';
+import '../repositories/ratings_repository.dart';
 import '../repositories/user_repository.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
@@ -35,15 +35,13 @@ class _GameDetailSheetState extends ConsumerState<GameDetailSheet> {
       setState(() => _checkingRating = false);
       return;
     }
-    final snap = await FirebaseFirestore.instance
-        .collection('ratings')
-        .where('gameId', isEqualTo: widget.game.id)
-        .where('raterId', isEqualTo: uid)
-        .limit(1)
-        .get();
+    final hasRated = await ref.read(ratingsRepositoryProvider).hasRated(
+          gameId: widget.game.id,
+          raterId: uid,
+        );
     if (mounted) {
       setState(() {
-        _hasRated = snap.docs.isNotEmpty;
+        _hasRated = hasRated;
         _checkingRating = false;
       });
     }
@@ -55,13 +53,12 @@ class _GameDetailSheetState extends ConsumerState<GameDetailSheet> {
     if (uid.isEmpty) return;
     setState(() => _savingRating = true);
     try {
-      await FirebaseFirestore.instance.collection('ratings').add({
-        'gameId': widget.game.id,
-        'raterId': uid,
-        'organizerId': widget.game.organizerId,
-        'rating': stars,
-        'createdAt': Timestamp.now(),
-      });
+      await ref.read(ratingsRepositoryProvider).saveRating(
+            gameId: widget.game.id,
+            raterId: uid,
+            organizerId: widget.game.organizerId,
+            rating: stars,
+          );
       await ref
           .read(userRepositoryProvider)
           .updateOrganizerRating(widget.game.organizerId);

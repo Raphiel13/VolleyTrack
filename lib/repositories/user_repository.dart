@@ -101,6 +101,17 @@ class UserRepository {
     });
   }
 
+  // Zapis URL zdjęcia profilowego — aktualizacja pojedynczego pola bez nadpisywania reszty profilu
+  Future<void> savePhotoUrl(String uid, String url) {
+    return _doc(uid).update({'photoUrl': url});
+  }
+
+  // Pobranie nazwy użytkownika do wyświetlenia w wiadomościach i potwierdzeniach
+  Future<String> getUserName(String uid) async {
+    final snap = await _doc(uid).get();
+    return (snap.data()?['name'] as String? ?? '').trim();
+  }
+
   // ── Backward-compatible aliases ────────────────────────────────────────────
 
   Stream<UserProfile> getUser(String uid) => watchUser(uid);

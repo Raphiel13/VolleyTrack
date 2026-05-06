@@ -233,6 +233,86 @@ class ChatMessage {
   });
 }
 
+// ─── GroupEvent ───────────────────────────────────────────────────────────────
+
+class GroupEvent {
+  final String id;
+  final DateTime dateTime;
+  final String location;
+  final String createdBy;
+  final int confirmedCount;
+  final List<DateTime> cancelledDates;
+  final bool isOpenToPublic;
+  final int? maxPlayers;
+
+  const GroupEvent({
+    required this.id,
+    required this.dateTime,
+    required this.location,
+    required this.createdBy,
+    required this.confirmedCount,
+    required this.cancelledDates,
+    this.isOpenToPublic = false,
+    this.maxPlayers,
+  });
+
+  // Sprawdzenie czy termin jest anulowany dla danego dnia i godziny
+  bool get isCancelled => cancelledDates.any((d) =>
+      d.year == dateTime.year &&
+      d.month == dateTime.month &&
+      d.day == dateTime.day &&
+      d.hour == dateTime.hour &&
+      d.minute == dateTime.minute);
+}
+
+// ─── GroupMessage ─────────────────────────────────────────────────────────────
+
+class GroupMessage {
+  final String id;
+  final String text;
+  final String userId;
+  final String userName;
+  final DateTime createdAt;
+
+  const GroupMessage({
+    required this.id,
+    required this.text,
+    required this.userId,
+    required this.userName,
+    required this.createdAt,
+  });
+}
+
+// ─── GroupMember ──────────────────────────────────────────────────────────────
+
+class GroupMember {
+  final String id;
+  final String name;
+  final PlayerLevel level;
+  final bool isAdmin;
+
+  const GroupMember({
+    required this.id,
+    required this.name,
+    required this.level,
+    required this.isAdmin,
+  });
+}
+
+// ─── GroupNotification ────────────────────────────────────────────────────────
+
+class GroupNotification {
+  final String id;
+  final String groupName;
+  final String message;
+
+  const GroupNotification({
+    required this.id,
+    required this.groupName,
+    required this.message,
+  });
+}
+
 // ─── MatchRecord ──────────────────────────────────────────────────────────────
 
 class MatchRecord {

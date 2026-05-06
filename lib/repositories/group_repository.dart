@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/models.dart';
+import 'auth_repository.dart';
 
 // ─── Providers ────────────────────────────────────────────────────────────────
 
@@ -14,6 +15,64 @@ final groupRepositoryProvider = Provider<GroupRepository>((ref) {
 final userGroupsProvider =
     StreamProvider.family<List<Group>, String>((ref, userId) {
   return ref.watch(groupRepositoryProvider).watchUserGroups(userId);
+});
+
+/// Nasłuchiwanie pełnych profili członków grupy z weryfikacją krzyżową z kolekcją users.
+final membersProvider =
+    StreamProvider.family<List<GroupMember>, String>((ref, groupId) {
+  // Pobranie danych bieżącego użytkownika jako fallback dla nazwy wyświetlanej
+  final currentUser = ref.read(authRepositoryProvider).currentUser;
+  final currentUid = currentUser?.uid ?? '';
+  final authDisplayName = currentUser?.displayName ?? '';
+
+  return FirebaseFirestore.instance
+      .collection('groups')
+      .doc(groupId)
+      .snapshots()
+      .asyncMap((groupSnap) async {
+    if (!groupSnap.exists) return <GroupMember>[];
+    final d = groupSnap.data();
+    if (d == null) return <GroupMember>[];
+    final memberIds = List<String>.from((d['members'] as List?) ?? []);
+    if (memberIds.isEmpty) return <GroupMember>[];
+
+    final adminId = d['adminId'] as String? ?? '';
+    // Ograniczenie zapytania whereIn do 30 elementów — limit Firestore
+    final snap = await FirebaseFirestore.instance
+        .collection('users')
+        .where(FieldPath.documentId, whereIn: memberIds.take(30).toList())
+        .get();
+
+    final profileMap = {for (final doc in snap.docs) doc.id: doc.data()};
+
+    // Iteracja po wszystkich memberIds — członkowie bez dokumentu users/ są nadal widoczni
+    return memberIds.take(30).map((memberId) {
+      final p = profileMap[memberId];
+      final rawName = (p?['name'] as String? ?? '').trim();
+      final String name;
+      if (rawName.isNotEmpty) {
+        name = rawName;
+      } else if (memberId == currentUid && authDisplayName.isNotEmpty) {
+        name = authDisplayName;
+      } else {
+        name = 'Gracz';
+      }
+      return GroupMember(
+        id: memberId,
+        name: name,
+        level: PlayerLevel.values.firstWhere(
+          (l) => l.name == (p?['level'] as String? ?? ''),
+          orElse: () => PlayerLevel.recreational,
+        ),
+        isAdmin: memberId == adminId,
+      );
+    }).toList()
+      ..sort((a, b) {
+        if (a.isAdmin) return -1;
+        if (b.isAdmin) return 1;
+        return a.name.compareTo(b.name);
+      });
+  });
 });
 
 // ─── Repository ───────────────────────────────────────────────────────────────
@@ -88,6 +147,11 @@ class GroupRepository {
 
   Future<void> setNextGame(String groupId, String nextGame) {
     return _groups.doc(groupId).update({'nextGame': nextGame});
+  }
+
+  // Pobranie dokumentu grupy jednorazowo — do odczytu listy członków i metadanych
+  Future<DocumentSnapshot<Map<String, dynamic>>> getGroupDoc(String groupId) {
+    return _groups.doc(groupId).get();
   }
 
   // ── Invite codes ───────────────────────────────────────────────────────────

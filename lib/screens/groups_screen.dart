@@ -1,48 +1,15 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repositories/auth_repository.dart';
 import '../repositories/group_repository.dart';
+import '../repositories/notifications_repository.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
 import '../widgets/ios_widgets.dart';
 
-// ─── Notification model & provider ───────────────────────────────────────────
-
-class _GroupNotification {
-  final String id;
-  final String groupName;
-  final String message;
-
-  const _GroupNotification({
-    required this.id,
-    required this.groupName,
-    required this.message,
-  });
-}
-
-/// Nasłuchiwanie pierwszego nieprzeczytanego powiadomienia użytkownika
-/// z kolekcji 'notifications'. Emituje null gdy brak nieprzeczytanych.
-final _firstNotificationProvider =
-    StreamProvider.family<_GroupNotification?, String>((ref, userId) {
-  return FirebaseFirestore.instance
-      .collection('notifications')
-      .where('userId', isEqualTo: userId)
-      .where('read', isEqualTo: false)
-      .limit(1)
-      .snapshots()
-      .map((snap) {
-    if (snap.docs.isEmpty) return null;
-    final doc = snap.docs.first;
-    final d = doc.data();
-    return _GroupNotification(
-      id: doc.id,
-      groupName: d['groupName'] as String? ?? '',
-      message: d['message'] as String? ?? '',
-    );
-  });
-});
+// Alias prywatny zachowujący istniejące referencje w widgecie _NotificationBanner
+final _firstNotificationProvider = firstNotificationProvider;
 
 // ─── Icon picker data ─────────────────────────────────────────────────────────
 
@@ -245,10 +212,9 @@ class _NotificationBannerState extends ConsumerState<_NotificationBanner>
     final notif =
         ref.read(_firstNotificationProvider(widget.uid)).valueOrNull;
     if (notif != null) {
-      FirebaseFirestore.instance
-          .collection('notifications')
-          .doc(notif.id)
-          .update({'read': true});
+      ref
+          .read(notificationsRepositoryProvider)
+          .markAsRead(notif.id);
     }
     await Future.delayed(const Duration(milliseconds: 550));
     if (!mounted) return;
