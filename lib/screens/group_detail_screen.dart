@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -1078,7 +1079,7 @@ class _EventTile extends ConsumerWidget {
 
     await docRef.set({
       'eventId': event.id,
-      'userId': uid,
+      'userId': FirebaseAuth.instance.currentUser!.uid,
       'groupId': groupId,
       'status': status,
       'userName': userName,
@@ -1517,7 +1518,7 @@ class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
         'groupName': widget.groupName,
         'dateTime': Timestamp.fromDate(_selectedDate),
         'location': _locationCtrl.text.trim(),
-        'createdBy': widget.uid,
+        'createdBy': FirebaseAuth.instance.currentUser!.uid,
         'createdByName': widget.organizerName,
         'confirmedIds': [],
         'cancelledDates': [],
@@ -1557,6 +1558,7 @@ class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
               'userId': memberId,
               'groupId': widget.groupId,
               'type': 'new_event',
+              'title': 'Nowy termin w grupie',
               'message': 'Nowy termin w grupie $groupName',
               'read': false,
               'createdAt': Timestamp.now(),
@@ -1567,7 +1569,9 @@ class _AddEventSheetState extends ConsumerState<_AddEventSheet> {
       }
 
       if (mounted) Navigator.pop(context);
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('Błąd: $e');
+      debugPrint('$st');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
