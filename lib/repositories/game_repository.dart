@@ -54,6 +54,10 @@ class GameRepository {
               // Użycie Warszawy jako fallbacku gdy brak współrzędnych
               final lat = (d['latitude'] as num?)?.toDouble() ?? 52.2297;
               final lng = (d['longitude'] as num?)?.toDouble() ?? 21.0122;
+              // Liczba zapisanych zewnętrznych uczestników wynika z playerIds —
+              // confirmedIds dotyczy potwierdzeń członków grupy, dlatego tu pomijane
+              final playerIds =
+                  List<String>.from((d['playerIds'] as List?) ?? []);
               return NearbyGame(
                 id: doc.id,
                 title: d['groupName'] as String? ?? d['title'] as String? ?? 'Gra grupowa',
@@ -62,7 +66,7 @@ class GameRepository {
                 level: PlayerLevel.recreational,
                 category: GameCategory.indoor,
                 spotsTotal: (d['maxPlayers'] as num? ?? 10).toInt(),
-                spotsTaken: (d['spotsTaken'] as num? ?? 0).toInt(),
+                spotsTaken: playerIds.length,
                 // Dystans przeliczany po stronie klienta na podstawie lokalizacji urządzenia
                 distanceKm: 0.0,
                 latitude: lat,
@@ -73,6 +77,7 @@ class GameRepository {
                 organizerId: d['createdBy'] as String? ?? '',
                 price: (d['price'] as num?)?.toDouble(),
                 isGroupEvent: true,
+                playerIds: playerIds,
               );
             }).toList());
   }
@@ -104,17 +109,15 @@ class GameRepository {
       if (!snap.exists) throw GameNotFoundException(gameId);
 
       final data = snap.data()!;
-      final spotsTaken = (data['spotsTaken'] as int? ?? 0);
       final spotsTotal = (data['spotsTotal'] as int? ?? 0);
-
-      if (spotsTaken >= spotsTotal) throw GameFullException(gameId);
-
       final playerIds = List<String>.from(data['playerIds'] as List? ?? []);
+
+      // Warunek pełności oparty na liczbie graczy, nie polu spotsTaken
+      if (playerIds.length >= spotsTotal) throw GameFullException(gameId);
       if (playerIds.contains(userId)) return; // idempotentne — bez duplikatów
 
       tx.update(ref, {
         'playerIds': FieldValue.arrayUnion([userId]),
-        'spotsTaken': FieldValue.increment(1),
       });
     });
   }
@@ -133,7 +136,6 @@ class GameRepository {
 
       tx.update(ref, {
         'playerIds': FieldValue.arrayRemove([userId]),
-        'spotsTaken': FieldValue.increment(-1),
       });
     });
   }

@@ -89,6 +89,7 @@ class NearbyGame {
   final bool isGroupEvent;
   final String organizerId;
   final double? price;
+  final List<String> playerIds;
 
   const NearbyGame({
     required this.id,
@@ -107,6 +108,7 @@ class NearbyGame {
     this.isGroupEvent = false,
     this.organizerId = '',
     this.price,
+    this.playerIds = const [],
   });
 
   int get spotsLeft => spotsTotal - spotsTaken;
@@ -131,6 +133,7 @@ class NearbyGame {
         isGroupEvent: isGroupEvent,
         organizerId: organizerId,
         price: price,
+        playerIds: playerIds,
       );
 
   factory NearbyGame.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -143,7 +146,9 @@ class NearbyGame {
       level: PlayerLevel.values.byName(d['level'] as String),
       category: GameCategory.values.byName(d['category'] as String),
       spotsTotal: d['spotsTotal'] as int,
-      spotsTaken: d['spotsTaken'] as int,
+      playerIds: List<String>.from((d['playerIds'] as List?) ?? []),
+      // Liczba zajętych miejsc wywnioskowana z długości playerIds
+      spotsTaken: (d['playerIds'] as List?)?.length ?? 0,
       organizerName: d['organizerName'] as String? ?? '',
       organizerRating: (d['organizerRating'] as num?)?.toDouble() ?? 0.0,
       distanceKm: 0.0,
@@ -161,9 +166,11 @@ class NearbyGame {
         'level': level.name,
         'category': category.name,
         'spotsTotal': spotsTotal,
-        'spotsTaken': spotsTaken,
         'organizerName': organizerName,
         'organizerRating': organizerRating,
+        'organizerId': organizerId,
+        'latitude': latitude,
+        'longitude': longitude,
         'isOpen': !isFull,
         'playerIds': <String>[],
       };

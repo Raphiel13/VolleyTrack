@@ -31,6 +31,7 @@ class HomeScreen extends ConsumerWidget {
 
     final t = AppTokens.of(context);
     final gamesAsync = ref.watch(openGamesProvider);
+    final groupGamesAsync = ref.watch(publicGroupGamesProvider);
     final stats = ref.watch(statsProvider(uid)).valueOrNull ?? UserStats.empty;
     final groupsAsync = ref.watch(userGroupsProvider(uid));
 
@@ -139,38 +140,45 @@ class HomeScreen extends ConsumerWidget {
               action: 'Zobacz wszystkie',
               onAction: onGoGames,
             ),
-            gamesAsync.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: IosCard(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 28),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.blue,
-                        strokeWidth: 2.5,
+            Builder(builder: (context) {
+              if (gamesAsync.isLoading || groupGamesAsync.isLoading) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: IosCard(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 28),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.blue,
+                          strokeWidth: 2.5,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-              error: (_, __) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: IosCard(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    child: Center(
-                      child: Text(
-                        'Nie udało się załadować gier',
-                        style: AppTheme.inter(
-                            fontSize: 14, color: t.label3),
+                );
+              }
+              if (gamesAsync.hasError) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: IosCard(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      child: Center(
+                        child: Text(
+                          'Nie udało się załadować gier',
+                          style: AppTheme.inter(
+                              fontSize: 14, color: t.label3),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-              data: (games) {
-                final preview = games.take(3).toList();
+                );
+              }
+              final allGames = <NearbyGame>[
+                ...gamesAsync.valueOrNull ?? [],
+                ...groupGamesAsync.valueOrNull ?? [],
+              ];
+              final preview = allGames.take(3).toList();
                 if (preview.isEmpty) {
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -257,8 +265,7 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   ),
                 );
-              },
-            ),
+              }),
             const SizedBox(height: 20),
 
             // ── Groups carousel ──────────────────────────────────────────

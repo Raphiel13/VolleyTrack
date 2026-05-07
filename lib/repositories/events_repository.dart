@@ -55,7 +55,10 @@ class EventsRepository {
             .toList());
   }
 
-  // Tworzenie terminu — wszystkie pola zapisywane atomowo w jednym dokumencie
+  // Tworzenie terminu — wszystkie pola zapisywane atomowo w jednym dokumencie.
+  // Pole playerIds inicjalizowane jako pusta tablica obsługuje zapisy osób
+  // spoza grupy na publiczne terminy. Członkowie grupy korzystają z osobnego
+  // mechanizmu confirmedIds dostępnego przez ConfirmationsRepository.
   Future<DocumentReference<Map<String, dynamic>>> createEvent({
     required String groupId,
     required String groupName,
@@ -78,12 +81,55 @@ class EventsRepository {
       'createdByName': createdByName,
       'confirmedIds': [],
       'cancelledDates': [],
+      'playerIds': <String>[],
       'isOpenToPublic': isOpenToPublic,
       'maxPlayers': isOpenToPublic ? maxPlayers : null,
-      'spotsTaken': 0,
       'latitude': latitude,
       'longitude': longitude,
       'price': price,
+    });
+  }
+
+  // Zapisanie zewnętrznego użytkownika na publiczny termin —
+  // operacja transakcyjna sprawdzająca limit miejsc i unikająca duplikatów
+  Future<void> joinEvent(String eventId, String userId) async {
+    await _db.runTransaction((tx) async {
+      final ref = _events.doc(eventId);
+      final snap = await tx.get(ref);
+
+      if (!snap.exists) throw EventNotFoundException(eventId);
+
+      final data = snap.data()!;
+      final playerIds = List<String>.from(data['playerIds'] as List? ?? []);
+      final maxPlayers = (data['maxPlayers'] as num?)?.toInt();
+
+      // Limit miejsc obowiązuje tylko gdy organizator go ustawił
+      if (maxPlayers != null && playerIds.length >= maxPlayers) {
+        throw EventFullException(eventId);
+      }
+      if (playerIds.contains(userId)) return; // idempotentne
+
+      tx.update(ref, {
+        'playerIds': FieldValue.arrayUnion([userId]),
+      });
+    });
+  }
+
+  // Wypisanie zewnętrznego użytkownika z publicznego terminu
+  Future<void> leaveEvent(String eventId, String userId) async {
+    await _db.runTransaction((tx) async {
+      final ref = _events.doc(eventId);
+      final snap = await tx.get(ref);
+
+      if (!snap.exists) throw EventNotFoundException(eventId);
+
+      final data = snap.data()!;
+      final playerIds = List<String>.from(data['playerIds'] as List? ?? []);
+      if (!playerIds.contains(userId)) return; // idempotentne
+
+      tx.update(ref, {
+        'playerIds': FieldValue.arrayRemove([userId]),
+      });
     });
   }
 
@@ -99,4 +145,22 @@ class EventsRepository {
   Future<void> setOpenToPublic(String eventId, {required bool isOpen}) {
     return _events.doc(eventId).update({'isOpenToPublic': isOpen});
   }
+}
+
+// ─── Exceptions ───────────────────────────────────────────────────────────────
+
+class EventNotFoundException implements Exception {
+  final String eventId;
+  const EventNotFoundException(this.eventId);
+
+  @override
+  String toString() => 'EventNotFoundException: event $eventId not found';
+}
+
+class EventFullException implements Exception {
+  final String eventId;
+  const EventFullException(this.eventId);
+
+  @override
+  String toString() => 'EventFullException: event $eventId has no spots left';
 }

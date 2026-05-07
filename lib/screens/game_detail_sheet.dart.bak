@@ -3,7 +3,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repositories/auth_repository.dart';
-import '../repositories/events_repository.dart';
 import '../repositories/game_repository.dart';
 import '../repositories/ratings_repository.dart';
 import '../repositories/user_repository.dart';
@@ -29,75 +28,6 @@ class _GameDetailSheetState extends ConsumerState<GameDetailSheet> {
   void initState() {
     super.initState();
     _checkExistingRating();
-    _initJoinedState();
-  }
-
-  // Inicjalizacja stanu zapisania na podstawie listy playerIds w grze —
-  // stan musi być spójny z bazą Firestore przy każdym otwarciu arkusza
-  void _initJoinedState() {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid != null && widget.game.playerIds.contains(uid)) {
-      setState(() => _joined = true);
-    }
-  }
-
-  // Zapisanie użytkownika na grę — rozgałęzienie zależne od źródła dokumentu.
-  // Gry w kolekcji 'games' obsługiwane przez GameRepository, publiczne terminy
-  // grup w kolekcji 'events' przez EventsRepository (osobne reguły bezpieczeństwa).
-  Future<void> _handleJoin() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
-
-    try {
-      if (widget.game.isGroupEvent) {
-        await ref.read(eventsRepositoryProvider).joinEvent(widget.game.id, uid);
-      } else {
-        await ref.read(gameRepositoryProvider).joinGame(widget.game.id, uid);
-      }
-      if (mounted) setState(() => _joined = true);
-    } on GameFullException {
-      _showError('Brak wolnych miejsc');
-    } on EventFullException {
-      _showError('Brak wolnych miejsc');
-    } on GameNotFoundException {
-      _showError('Gra już nie istnieje');
-    } on EventNotFoundException {
-      _showError('Termin już nie istnieje');
-    } catch (e, st) {
-      debugPrint('[GameDetailSheet._handleJoin] $e');
-      debugPrint('$st');
-      _showError('Nie udało się zapisać');
-    }
-  }
-
-  // Wypisanie się z gry — analogiczne rozgałęzienie do _handleJoin
-  Future<void> _handleLeave() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
-
-    try {
-      if (widget.game.isGroupEvent) {
-        await ref.read(eventsRepositoryProvider).leaveEvent(widget.game.id, uid);
-      } else {
-        await ref.read(gameRepositoryProvider).leaveGame(widget.game.id, uid);
-      }
-      if (mounted) setState(() => _joined = false);
-    } catch (e, st) {
-      debugPrint('[GameDetailSheet._handleLeave] $e');
-      debugPrint('$st');
-      _showError('Nie udało się wypisać');
-    }
-  }
-
-  // Wspólny SnackBar dla błędów obu operacji
-  void _showError(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(message, style: AppTheme.inter()),
-      backgroundColor: AppColors.red,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    ));
   }
 
   // Sprawdzenie czy bieżący użytkownik już ocenił grę — zapobieganie podwójnym ocenom
@@ -605,7 +535,7 @@ class _GameDetailSheetState extends ConsumerState<GameDetailSheet> {
   Widget _joinBtn(BuildContext context) => SizedBox(
         width: double.infinity,
         child: ElevatedButton(
-          onPressed: _handleJoin,
+          onPressed: () => setState(() => _joined = true),
           child: const Text('Zapisz się'),
         ),
       );
@@ -636,7 +566,7 @@ class _GameDetailSheetState extends ConsumerState<GameDetailSheet> {
         SizedBox(
           width: double.infinity,
           child: OutlinedButton(
-            onPressed: _handleLeave,
+            onPressed: () => setState(() => _joined = false),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.red,
               side: BorderSide(
