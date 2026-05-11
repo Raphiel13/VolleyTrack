@@ -78,6 +78,7 @@ class GameRepository {
                 price: (d['price'] as num?)?.toDouble(),
                 isGroupEvent: true,
                 playerIds: playerIds,
+                groupId: d['groupId'] as String?,
               );
             }).toList());
   }

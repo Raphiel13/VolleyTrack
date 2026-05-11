@@ -1,8 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repositories/auth_repository.dart';
+import '../repositories/confirmations_repository.dart';
 import '../repositories/events_repository.dart';
 import '../repositories/game_repository.dart';
 import '../repositories/ratings_repository.dart';
@@ -32,25 +34,89 @@ class _GameDetailSheetState extends ConsumerState<GameDetailSheet> {
     _initJoinedState();
   }
 
-  // Inicjalizacja stanu zapisania na podstawie listy playerIds w grze —
-  // stan musi być spójny z bazą Firestore przy każdym otwarciu arkusza
-  void _initJoinedState() {
+  // Inicjalizacja stanu zapisania — sprawdzenie playerIds (natychmiastowe)
+  // oraz dla wydarzeń grupowych dodatkowo confirmations (async)
+  Future<void> _initJoinedState() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid != null && widget.game.playerIds.contains(uid)) {
-      setState(() => _joined = true);
+    if (uid == null) return;
+
+    // Sprawdzenie zewnętrznego zapisu (playerIds) — natychmiastowe,
+    // dane już dostępne w widget.game
+    if (widget.game.playerIds.contains(uid)) {
+      if (mounted) setState(() => _joined = true);
+      return;
+    }
+
+    // Dla wydarzeń grupowych dodatkowo sprawdzenie potwierdzenia obecności —
+    // członkowie grupy zapisani przez auto-confirmation są w confirmations,
+    // nie w playerIds
+    if (widget.game.isGroupEvent) {
+      final docId = '${widget.game.id}_$uid';
+      final snap = await FirebaseFirestore.instance
+          .collection('confirmations')
+          .doc(docId)
+          .get();
+      final status = snap.data()?['status'] as String?;
+      if (status == 'yes' && mounted) {
+        setState(() => _joined = true);
+      }
     }
   }
 
-  // Zapisanie użytkownika na grę — rozgałęzienie zależne od źródła dokumentu.
-  // Gry w kolekcji 'games' obsługiwane przez GameRepository, publiczne terminy
-  // grup w kolekcji 'events' przez EventsRepository (osobne reguły bezpieczeństwa).
+  // Rozwiązanie nazwy użytkownika z trzech źródeł — analogicznie do logiki
+  // stosowanej w czacie grupy. Kolejność: profil w users/, displayName
+  // z FirebaseAuth, wartość domyślna.
+  Future<String> _resolveUserName(String uid) async {
+    final fbUser = FirebaseAuth.instance.currentUser;
+    String userName = (fbUser?.displayName ?? '').trim();
+
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .get();
+    final name = (doc.data()?['name'] as String? ?? '').trim();
+    if (name.isNotEmpty) userName = name;
+
+    if (userName.isEmpty) userName = 'Gracz';
+    return userName;
+  }
+
+  // Zapisanie użytkownika na grę — dla członków grupy-właściciela zdarzenia
+  // zapis trafia do confirmations (widoczne w zakładce Skład), dla pozostałych
+  // do playerIds
   Future<void> _handleJoin() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
     try {
       if (widget.game.isGroupEvent) {
-        await ref.read(eventsRepositoryProvider).joinEvent(widget.game.id, uid);
+        final groupId = widget.game.groupId;
+        bool isGroupMember = false;
+        if (groupId != null && groupId.isNotEmpty) {
+          final groupSnap = await FirebaseFirestore.instance
+              .collection('groups')
+              .doc(groupId)
+              .get();
+          final members = List<String>.from(
+              (groupSnap.data()?['members'] as List?) ?? []);
+          isGroupMember = members.contains(uid);
+        }
+
+        if (isGroupMember) {
+          // Pobranie nazwy użytkownika do zapisania w dokumencie potwierdzenia
+          final userName = await _resolveUserName(uid);
+          await ref.read(confirmationsRepositoryProvider).setConfirmation(
+                eventId: widget.game.id,
+                userId: uid,
+                groupId: groupId!,
+                status: 'yes',
+                userName: userName,
+              );
+        } else {
+          await ref
+              .read(eventsRepositoryProvider)
+              .joinEvent(widget.game.id, uid);
+        }
       } else {
         await ref.read(gameRepositoryProvider).joinGame(widget.game.id, uid);
       }
@@ -77,7 +143,31 @@ class _GameDetailSheetState extends ConsumerState<GameDetailSheet> {
 
     try {
       if (widget.game.isGroupEvent) {
-        await ref.read(eventsRepositoryProvider).leaveEvent(widget.game.id, uid);
+        final groupId = widget.game.groupId;
+        bool isGroupMember = false;
+        if (groupId != null && groupId.isNotEmpty) {
+          final groupSnap = await FirebaseFirestore.instance
+              .collection('groups')
+              .doc(groupId)
+              .get();
+          final members = List<String>.from(
+              (groupSnap.data()?['members'] as List?) ?? []);
+          isGroupMember = members.contains(uid);
+        }
+
+        if (isGroupMember) {
+          await ref.read(confirmationsRepositoryProvider).setConfirmation(
+                eventId: widget.game.id,
+                userId: uid,
+                groupId: groupId!,
+                status: '',
+                userName: '',
+              );
+        } else {
+          await ref
+              .read(eventsRepositoryProvider)
+              .leaveEvent(widget.game.id, uid);
+        }
       } else {
         await ref.read(gameRepositoryProvider).leaveGame(widget.game.id, uid);
       }

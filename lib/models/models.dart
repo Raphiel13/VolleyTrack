@@ -90,6 +90,7 @@ class NearbyGame {
   final String organizerId;
   final double? price;
   final List<String> playerIds;
+  final String? groupId;
 
   const NearbyGame({
     required this.id,
@@ -109,6 +110,7 @@ class NearbyGame {
     this.organizerId = '',
     this.price,
     this.playerIds = const [],
+    this.groupId,
   });
 
   int get spotsLeft => spotsTotal - spotsTaken;
@@ -134,6 +136,7 @@ class NearbyGame {
         organizerId: organizerId,
         price: price,
         playerIds: playerIds,
+        groupId: groupId,
       );
 
   factory NearbyGame.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
