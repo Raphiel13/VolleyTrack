@@ -2,7 +2,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repositories/auth_repository.dart';
-import '../repositories/game_repository.dart';
 import '../repositories/group_repository.dart';
 import '../repositories/stats_repository.dart';
 import '../theme/app_theme.dart';
@@ -30,8 +29,6 @@ class HomeScreen extends ConsumerWidget {
     if (uid == null || uid.isEmpty) return const SizedBox.shrink();
 
     final t = AppTokens.of(context);
-    final gamesAsync = ref.watch(openGamesProvider);
-    final groupGamesAsync = ref.watch(publicGroupGamesProvider);
     final stats = ref.watch(statsProvider(uid)).valueOrNull ?? UserStats.empty;
     final groupsAsync = ref.watch(userGroupsProvider(uid));
 
@@ -132,140 +129,6 @@ class HomeScreen extends ConsumerWidget {
                 ),
               );
             }),
-            const SizedBox(height: 20),
-
-            // ── Nearest games ────────────────────────────────────────────
-            SectionLabel(
-              'Gry w pobliżu',
-              action: 'Zobacz wszystkie',
-              onAction: onGoGames,
-            ),
-            Builder(builder: (context) {
-              if (gamesAsync.isLoading || groupGamesAsync.isLoading) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: IosCard(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 28),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.blue,
-                          strokeWidth: 2.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }
-              if (gamesAsync.hasError) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: IosCard(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      child: Center(
-                        child: Text(
-                          'Nie udało się załadować gier',
-                          style: AppTheme.inter(
-                              fontSize: 14, color: t.label3),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }
-              final allGames = <NearbyGame>[
-                ...gamesAsync.valueOrNull ?? [],
-                ...groupGamesAsync.valueOrNull ?? [],
-              ];
-              final preview = allGames.take(3).toList();
-                if (preview.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: IosCard(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 20),
-                        child: Center(
-                          child: Text(
-                            'Brak gier w pobliżu',
-                            style: AppTheme.inter(
-                                fontSize: 14, color: t.label3),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: IosCard(
-                    child: Column(
-                      children: preview.asMap().entries.map((e) {
-                        final g = e.value;
-                        final i = e.key;
-                        return Column(
-                          children: [
-                            IosRow(
-                              onTap: () => onOpenGame(g),
-                              leading: SfIconBox(
-                                iconWidget: Icon(
-                                  g.category == GameCategory.beach
-                                      ? Icons.beach_access
-                                      : Icons.sports_volleyball,
-                                  size: 17,
-                                  color: g.category == GameCategory.beach
-                                      ? AppColors.orange
-                                      : AppColors.blue,
-                                ),
-                                bgColor: g.category == GameCategory.beach
-                                    ? AppColors.orange.withValues(alpha: 0.12)
-                                    : AppColors.blue.withValues(alpha: 0.12),
-                              ),
-                              title: Text(
-                                g.title,
-                                style: AppTheme.inter(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: t.label,
-                                ),
-                              ),
-                              subtitle: Text(
-                                '${g.location} · ${g.distanceKm} km',
-                                style: AppTheme.inter(
-                                    fontSize: 13, color: t.label2),
-                              ),
-                              trailing: Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    '${g.dateTime.hour.toString().padLeft(2, '0')}:'
-                                    '${g.dateTime.minute.toString().padLeft(2, '0')}',
-                                    style: AppTheme.inter(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: g.matchesUser(user)
-                                          ? AppColors.blue
-                                          : t.label2,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Dziś',
-                                    style: AppTheme.inter(
-                                        fontSize: 12, color: t.label3),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (i < preview.length - 1)
-                              const IosSeparator(),
-                          ],
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                );
-              }),
             const SizedBox(height: 20),
 
             // ── Groups carousel ──────────────────────────────────────────

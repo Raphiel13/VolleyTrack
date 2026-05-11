@@ -554,12 +554,6 @@ class _MapViewState extends State<_MapView> {
     return dlat > 0.001 || dlng > 0.001;
   }
 
-  String _fmtKm(double v) => v < 1
-      ? '${(v * 1000).round()} m'
-      : v == v.roundToDouble()
-          ? '${v.round()} km'
-          : '${v.toStringAsFixed(1)} km';
-
   // Budowanie zestawu markerów — rozróżnienie pozycji użytkownika, dopasowanych i pozostałych gier
   Set<Marker> _buildMarkers() {
     return {
@@ -615,8 +609,6 @@ class _MapViewState extends State<_MapView> {
 
   @override
   Widget build(BuildContext context) {
-    final t = AppTokens.of(context);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -721,18 +713,6 @@ class _MapViewState extends State<_MapView> {
           ),
         ),
 
-        // ── Count label ───────────────────────────────────────────────────
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-          child: Text(
-            '${widget.filteredGames.length} gier w ${_fmtKm(widget.radius)}',
-            style: AppTheme.inter(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: t.label2,
-            ),
-          ),
-        ),
 
         // ── List below map ────────────────────────────────────────────────
         Padding(

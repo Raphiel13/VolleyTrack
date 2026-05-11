@@ -441,13 +441,6 @@ class KmSlider extends StatelessWidget {
 
   const KmSlider({super.key, required this.value, required this.onChanged});
 
-  String _fmt(double v) {
-    if (v < 1) return '${(v * 1000).round()} m';
-    return v == v.roundToDouble()
-        ? '${v.round()} km'
-        : '${v.toStringAsFixed(1)} km';
-  }
-
   double _toSlider(double km) =>
       (_log(km / _min) / _log(_max / _min)).clamp(0.0, 1.0);
 
@@ -485,16 +478,6 @@ class KmSlider extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
     final pct = _toSlider(value);
-    final count = value <= 2
-        ? 1
-        : value <= 5
-            ? 2
-            : value <= 15
-                ? 3
-                : value <= 30
-                    ? 4
-                    : 5;
-
     return IosCard(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       child: Column(
@@ -523,29 +506,6 @@ class KmSlider extends StatelessWidget {
                   ],
                 ),
               ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.blue,
-                  borderRadius: BorderRadius.circular(99),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.blue.withOpacity(0.35),
-                      blurRadius: 12,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Text(
-                  _fmt(value),
-                  style: AppTheme.inter(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -563,74 +523,6 @@ class KmSlider extends StatelessWidget {
             child: Slider(
               value: pct,
               onChanged: (v) => onChanged(_fromSlider(v)),
-            ),
-          ),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              const visibleTicks = [0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 50.0];
-              // Thumb radius matches RoundSliderThumbShape(enabledThumbRadius: 13).
-              // The thumb travels from thumbR to (width - thumbR).
-              const thumbR = 13.0;
-              final trackW = constraints.maxWidth - 2 * thumbR;
-              return SizedBox(
-                height: 18,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: visibleTicks.map((snap) {
-                    final x = thumbR + _toSlider(snap) * trackW;
-                    final isActive = snap == value;
-                    final lbl = snap < 1
-                        ? '500m'
-                        : snap < 10
-                            ? '${snap.round()}km'
-                            : '${snap.round()}';
-                    return Positioned(
-                      left: x,
-                      top: 0,
-                      child: FractionalTranslation(
-                        translation: const Offset(-0.5, 0),
-                        child: GestureDetector(
-                          onTap: () => onChanged(snap),
-                          child: Text(
-                            lbl,
-                            style: AppTheme.inter(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                              color:
-                                  isActive ? AppColors.blue : t.label3,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.green.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.green.withOpacity(0.15)),
-            ),
-            child: Row(
-              children: [
-                Text(
-                  '$count gier ',
-                  style: AppTheme.inter(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.green,
-                  ),
-                ),
-                Text(
-                  'w promieniu ${_fmt(value)}',
-                  style: AppTheme.inter(fontSize: 11, color: t.label2),
-                ),
-              ],
             ),
           ),
         ],
