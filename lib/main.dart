@@ -226,6 +226,7 @@ class _MainShellState extends State<MainShell> {
             });
           },
           onGoGames: () => setState(() => _tab = 1),
+          onGoGroups: () => setState(() => _tab = 3),
         ),
       ),
       _TabNav(

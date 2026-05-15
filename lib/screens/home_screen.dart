@@ -13,6 +13,7 @@ class HomeScreen extends ConsumerWidget {
   final void Function(NearbyGame) onOpenGame;
   final void Function(Group) onOpenGroup;
   final VoidCallback onGoGames;
+  final VoidCallback onGoGroups;
 
   const HomeScreen({
     super.key,
@@ -20,6 +21,7 @@ class HomeScreen extends ConsumerWidget {
     required this.onOpenGame,
     required this.onOpenGroup,
     required this.onGoGames,
+    required this.onGoGroups,
   });
 
   @override
@@ -135,7 +137,7 @@ class HomeScreen extends ConsumerWidget {
             SectionLabel(
               'Twoje grupy',
               action: 'Wszystkie',
-              onAction: onGoGames,
+              onAction: onGoGroups,
             ),
             groupsAsync.when(
               loading: () => const SizedBox(
@@ -223,7 +225,7 @@ class _HeroBanner extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'SEZON 2025',
+                'SEZON ${DateTime.now().year}',
                 style: AppTheme.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,

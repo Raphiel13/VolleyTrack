@@ -92,8 +92,6 @@ class GroupsScreen extends ConsumerWidget {
         SliverList(
           delegate: SliverChildListDelegate([
             const SizedBox(height: 16),
-            _NotificationBanner(uid: uid),
-            const SizedBox(height: 4),
             const SectionLabel('Moje grupy'),
             groupsAsync.when(
               loading: () => const Padding(
