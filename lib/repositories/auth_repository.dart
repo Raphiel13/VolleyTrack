@@ -13,6 +13,10 @@ final authStateProvider = StreamProvider<User?>((ref) {
   return ref.watch(authRepositoryProvider).authStateChanges;
 });
 
+// Licznik wymuszający przebudowanie _AuthGate po potwierdzeniu e-maila —
+// konieczny, bo authStateChanges() nie emituje przy samej zmianie emailVerified
+final emailVerifiedRefreshProvider = StateProvider<int>((ref) => 0);
+
 class AuthRepository {
   final FirebaseAuth _auth;
 
@@ -38,9 +42,27 @@ class AuthRepository {
       password: password,
     );
     final user = cred.user;
-    if (user == null) return;
+    if (user == null) {
+      print('[AuthRepo] signUpWithEmail: user is null after createUser');
+      return;
+    }
 
     await user.updateDisplayName(displayName);
+
+    // Wysyłka maila weryfikacyjnego na tej konkretnej instancji User —
+    // pewniejsze niż _auth.currentUser, bo bez ryzyka race condition.
+    // Wyjątki rzucane przez sendEmailVerification są tu jawnie logowane —
+    // ciche połknięcie błędu wcześniej uniemożliwiało diagnozę problemów
+    // z dostarczaniem maili.
+    try {
+      print('[AuthRepo] Calling sendEmailVerification for ${user.email}');
+      await user.sendEmailVerification();
+      print('[AuthRepo] sendEmailVerification completed without exception');
+    } catch (e, st) {
+      print('[AuthRepo] sendEmailVerification FAILED: ${e.runtimeType}: $e');
+      print('$st');
+      rethrow;
+    }
 
     await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
       'name': displayName,
@@ -96,6 +118,16 @@ class AuthRepository {
       print('Error type: ${e.runtimeType}, message: $e');
       rethrow;
     }
+  }
+
+  // Wysłanie e-maila z linkiem weryfikacyjnym do aktualnie zalogowanego użytkownika
+  Future<void> sendEmailVerification() async {
+    await _auth.currentUser?.sendEmailVerification();
+  }
+
+  // Odświeżenie danych użytkownika z serwera — konieczne by sprawdzić aktualny status weryfikacji
+  Future<void> reloadUser() async {
+    await _auth.currentUser?.reload();
   }
 
   // Wylogowanie z Firebase i Google — oba serwisy rozłączane niezależnie

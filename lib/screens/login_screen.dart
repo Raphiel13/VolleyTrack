@@ -75,6 +75,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           _passwordCtrl.text,
           _nameCtrl.text.trim(),
         );
+        // Mail weryfikacyjny wysyłany wewnątrz signUpWithEmail —
+        // _AuthGate automatycznie przekieruje na ekran weryfikacji
       }
     } catch (e) {
       setState(() => _error = _friendlyError(e.toString()));

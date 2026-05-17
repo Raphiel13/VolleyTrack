@@ -12,6 +12,7 @@ import 'repositories/stats_repository.dart';
 import 'repositories/user_repository.dart';
 import 'theme/app_theme.dart';
 import 'models/models.dart';
+import 'screens/email_verification_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/games_screen.dart';
@@ -98,10 +99,21 @@ class _AuthGate extends ConsumerWidget {
 
     // First check auth state — redirect to login when signed out.
     final authState = ref.watch(authStateProvider);
+    // Subskrybuje licznik odświeżeń — wymusza przebudowanie po potwierdzeniu e-maila
+    ref.watch(emailVerifiedRefreshProvider);
     if (authState.isLoading) return const _SplashScreen();
     if (authState.hasError) return const LoginScreen();
     final firebaseUser = authState.valueOrNull;
     if (firebaseUser == null) return const LoginScreen();
+
+    // authStateChanges() nie emituje przy samej zmianie emailVerified —
+    // czytamy aktualny status bezpośrednio z currentUser (zaktualizowany po reload()).
+    // Konta Google mają emailVerified = true z natury, więc przechodzą bez weryfikacji.
+    // TODO: Rozważyć wzmocnienie reguł Firestore o request.auth.token.email_verified == true
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null && !currentUser.emailVerified) {
+      return const EmailVerificationScreen();
+    }
 
     // Ensure users/{uid} doc exists (idempotent — no-op when already there).
     ref.read(userRepositoryProvider).createUserProfile(firebaseUser);
